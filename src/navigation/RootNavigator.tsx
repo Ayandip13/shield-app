@@ -3,7 +3,7 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import { LoginScreen } from '../screens/auth/LoginScreen';
-import { ProviderHomeScreen } from '../screens/provider/ProviderHomeScreen';
+import { ProviderAdminNavigator } from './ProviderAdminNavigator';
 import { CommitteeHomeScreen } from '../screens/committee/CommitteeHomeScreen';
 import { GuardHomeScreen } from '../screens/guard/GuardHomeScreen';
 import { useAuth } from '../context/AuthContext';
@@ -51,8 +51,8 @@ export const RootNavigator: React.FC = () => {
         // Authenticated Provider Admin Stack
         <Stack.Screen
           name="ProviderAdmin"
-          component={ProviderHomeScreen}
-          options={{ title: 'SecuShield - Provider Control' }}
+          component={ProviderAdminNavigator}
+          options={{ headerShown: false }}
         />
       ) : user.role === 'committee' ? (
         // Authenticated Committee Stack
