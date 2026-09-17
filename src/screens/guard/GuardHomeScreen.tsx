@@ -7,6 +7,8 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
 import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
@@ -15,9 +17,13 @@ import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../theme';
 import { Guard } from '../../types/guard';
 import { getMyGuardProfile } from '../../services/guardService';
+import { GuardStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 
+type NavigationProp = NativeStackNavigationProp<GuardStackParamList, 'GuardHome'>;
+
 export const GuardHomeScreen: React.FC = () => {
+  const navigation = useNavigation<NavigationProp>();
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState<Guard | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -129,7 +135,7 @@ export const GuardHomeScreen: React.FC = () => {
           )}
         </Card>
 
-        {/* Future Modules Section */}
+        {/* Duty Operations Section */}
         <View style={styles.modulesSection}>
           <Text variant="heading" style={styles.sectionHeaderTitle}>
             Duty Operations
@@ -138,39 +144,39 @@ export const GuardHomeScreen: React.FC = () => {
           <View style={styles.modulesGrid}>
             <TouchableOpacity
               style={styles.moduleCard}
-              onPress={() => handlePlaceholderPress('Attendance Check-In')}
+              onPress={() => navigation.navigate('GuardAttendance')}
               activeOpacity={0.7}
             >
               <View style={styles.moduleHeader}>
                 <Ionicons name="time-outline" size={26} color={theme.colors.primary} />
-                <View style={styles.comingSoonBadge}>
-                  <Text style={styles.comingSoonText}>SOON</Text>
+                <View style={styles.activeBadge}>
+                  <Text style={styles.activeBadgeText}>ACTIVE</Text>
                 </View>
               </View>
               <Text variant="heading" style={styles.moduleTitle}>
                 Attendance
               </Text>
               <Text variant="caption" style={styles.moduleSubtitle}>
-                Shift check-in & check-out
+                Shift check-in & check-out history
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.moduleCard}
-              onPress={() => handlePlaceholderPress('My Shift Schedule')}
+              onPress={() => navigation.navigate('GuardShift')}
               activeOpacity={0.7}
             >
               <View style={styles.moduleHeader}>
                 <Ionicons name="calendar-outline" size={26} color={theme.colors.primary} />
-                <View style={styles.comingSoonBadge}>
-                  <Text style={styles.comingSoonText}>SOON</Text>
+                <View style={styles.activeBadge}>
+                  <Text style={styles.activeBadgeText}>ACTIVE</Text>
                 </View>
               </View>
               <Text variant="heading" style={styles.moduleTitle}>
                 My Shift
               </Text>
               <Text variant="caption" style={styles.moduleSubtitle}>
-                View roster & roster hours
+                View roster & duty hours
               </Text>
             </TouchableOpacity>
 
@@ -313,6 +319,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: theme.spacing.xs,
+  },
+  activeBadge: {
+    backgroundColor: theme.colors.successLight,
+    paddingHorizontal: theme.spacing.xs,
+    paddingVertical: 2,
+    borderRadius: theme.borderRadius.sm,
+  },
+  activeBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#065F46',
   },
   comingSoonBadge: {
     backgroundColor: theme.colors.infoLight,

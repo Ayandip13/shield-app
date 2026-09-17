@@ -7,6 +7,8 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
 import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
@@ -15,9 +17,13 @@ import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../theme';
 import { CommitteeMember } from '../../types/committee';
 import { getMyCommitteeProfile } from '../../services/committeeService';
+import { CommitteeStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 
+type NavigationProp = NativeStackNavigationProp<CommitteeStackParamList, 'CommitteeHome'>;
+
 export const CommitteeHomeScreen: React.FC = () => {
+  const navigation = useNavigation<NavigationProp>();
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState<CommitteeMember | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -115,13 +121,32 @@ export const CommitteeHomeScreen: React.FC = () => {
           )}
         </Card>
 
-        {/* Future Overview Sections */}
+        {/* Building Overview Modules */}
         <View style={styles.modulesSection}>
           <Text variant="heading" style={styles.sectionHeaderTitle}>
             Building Management Overview
           </Text>
 
           <View style={styles.modulesGrid}>
+            <TouchableOpacity
+              style={styles.moduleCard}
+              onPress={() => navigation.navigate('CommitteeAttendance')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.moduleHeader}>
+                <Ionicons name="clipboard-outline" size={26} color={theme.colors.committee} />
+                <View style={styles.activeBadge}>
+                  <Text style={styles.activeBadgeText}>ACTIVE</Text>
+                </View>
+              </View>
+              <Text variant="heading" style={styles.moduleTitle}>
+                Attendance Summary
+              </Text>
+              <Text variant="caption" style={styles.moduleSubtitle}>
+                Building guard attendance logs
+              </Text>
+            </TouchableOpacity>
+
             <TouchableOpacity
               style={styles.moduleCard}
               onPress={() => handlePlaceholderPress('Security Activity Log')}
@@ -157,25 +182,6 @@ export const CommitteeHomeScreen: React.FC = () => {
               </Text>
               <Text variant="caption" style={styles.moduleSubtitle}>
                 On-duty guard assignments
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.moduleCard}
-              onPress={() => handlePlaceholderPress('Guard Attendance Summary')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.moduleHeader}>
-                <Ionicons name="clipboard-outline" size={26} color={theme.colors.committee} />
-                <View style={styles.comingSoonBadge}>
-                  <Text style={styles.comingSoonText}>SOON</Text>
-                </View>
-              </View>
-              <Text variant="heading" style={styles.moduleTitle}>
-                Attendance Summary
-              </Text>
-              <Text variant="caption" style={styles.moduleSubtitle}>
-                Guard attendance reports
               </Text>
             </TouchableOpacity>
 
@@ -317,6 +323,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: theme.spacing.xs,
+  },
+  activeBadge: {
+    backgroundColor: theme.colors.successLight,
+    paddingHorizontal: theme.spacing.xs,
+    paddingVertical: 2,
+    borderRadius: theme.borderRadius.sm,
+  },
+  activeBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#065F46',
   },
   comingSoonBadge: {
     backgroundColor: theme.colors.infoLight,

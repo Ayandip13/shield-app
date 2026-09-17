@@ -121,7 +121,7 @@ export const ProviderDashboardScreen: React.FC = () => {
               onPress={() => navigation.navigate('BuildingsList')}
               activeOpacity={0.7}
             >
-              <Ionicons name="business" size={24} color={theme.colors.primary} />
+              <Ionicons name="business" size={22} color={theme.colors.primary} />
               <Text variant="body" style={styles.navCardText}>
                 Buildings
               </Text>
@@ -132,7 +132,7 @@ export const ProviderDashboardScreen: React.FC = () => {
               onPress={() => navigation.navigate('GuardsList')}
               activeOpacity={0.7}
             >
-              <Ionicons name="shield-checkmark" size={24} color={theme.colors.guard} />
+              <Ionicons name="shield-checkmark" size={22} color={theme.colors.guard} />
               <Text variant="body" style={styles.navCardText}>
                 Guards
               </Text>
@@ -143,9 +143,20 @@ export const ProviderDashboardScreen: React.FC = () => {
               onPress={() => navigation.navigate('CommitteeList')}
               activeOpacity={0.7}
             >
-              <Ionicons name="people" size={24} color={theme.colors.committee} />
+              <Ionicons name="people" size={22} color={theme.colors.committee} />
               <Text variant="body" style={styles.navCardText}>
                 Committee
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.navCardBtn}
+              onPress={() => navigation.navigate('ProviderAttendance')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="time" size={22} color={theme.colors.primaryDark} />
+              <Text variant="body" style={styles.navCardText}>
+                Attendance
               </Text>
             </TouchableOpacity>
           </View>
@@ -397,14 +408,14 @@ const styles = StyleSheet.create({
   navButtonsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: theme.spacing.sm,
+    gap: theme.spacing.xs,
     marginBottom: theme.spacing.md,
   },
   navCardBtn: {
     flex: 1,
     backgroundColor: theme.colors.surface,
     paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.xs,
+    paddingHorizontal: 2,
     borderRadius: theme.borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -418,7 +429,7 @@ const styles = StyleSheet.create({
   },
   navCardText: {
     marginTop: theme.spacing.xs,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: theme.colors.textPrimary,
   },

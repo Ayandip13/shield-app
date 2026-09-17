@@ -14,6 +14,7 @@ import { CommitteeListScreen } from '../screens/provider/CommitteeListScreen';
 import { AddCommitteeMemberScreen } from '../screens/provider/AddCommitteeMemberScreen';
 import { CommitteeDetailsScreen } from '../screens/provider/CommitteeDetailsScreen';
 import { EditCommitteeMemberScreen } from '../screens/provider/EditCommitteeMemberScreen';
+import { ProviderAttendanceScreen } from '../screens/provider/ProviderAttendanceScreen';
 import { theme } from '../theme';
 
 const Stack = createNativeStackNavigator<ProviderStackParamList>();
@@ -100,6 +101,11 @@ export const ProviderAdminNavigator: React.FC = () => {
         name="EditCommitteeMember"
         component={EditCommitteeMemberScreen}
         options={{ title: 'Edit Committee Member' }}
+      />
+      <Stack.Screen
+        name="ProviderAttendance"
+        component={ProviderAttendanceScreen}
+        options={{ title: 'Attendance Overview' }}
       />
     </Stack.Navigator>
   );

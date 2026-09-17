@@ -4,8 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { ProviderAdminNavigator } from './ProviderAdminNavigator';
-import { CommitteeHomeScreen } from '../screens/committee/CommitteeHomeScreen';
-import { GuardHomeScreen } from '../screens/guard/GuardHomeScreen';
+import { CommitteeNavigator } from './CommitteeNavigator';
+import { GuardNavigator } from './GuardNavigator';
 import { useAuth } from '../context/AuthContext';
 import { theme } from '../theme';
 import { Text } from '../components/common/Text';
@@ -58,15 +58,15 @@ export const RootNavigator: React.FC = () => {
         // Authenticated Committee Stack
         <Stack.Screen
           name="Committee"
-          component={CommitteeHomeScreen}
-          options={{ title: 'SecuShield - Committee Portal' }}
+          component={CommitteeNavigator}
+          options={{ headerShown: false }}
         />
       ) : (
         // Authenticated Guard Stack
         <Stack.Screen
           name="Guard"
-          component={GuardHomeScreen}
-          options={{ title: 'SecuShield - Guard Terminal' }}
+          component={GuardNavigator}
+          options={{ headerShown: false }}
         />
       )}
     </Stack.Navigator>

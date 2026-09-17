@@ -1,7 +1,6 @@
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { Building } from './building';
-
 import { Guard } from './guard';
 import { CommitteeMember } from './committee';
 
@@ -19,6 +18,18 @@ export type ProviderStackParamList = {
   CommitteeDetails: { memberId: string };
   AddCommitteeMember: undefined;
   EditCommitteeMember: { member: CommitteeMember };
+  ProviderAttendance: undefined;
+};
+
+export type GuardStackParamList = {
+  GuardHome: undefined;
+  GuardAttendance: undefined;
+  GuardShift: undefined;
+};
+
+export type CommitteeStackParamList = {
+  CommitteeHome: undefined;
+  CommitteeAttendance: undefined;
 };
 
 export type RootStackParamList = {
@@ -46,5 +57,15 @@ export type ProviderNavigationProp<T extends keyof ProviderStackParamList> = Nat
 
 export type ProviderScreenRouteProp<T extends keyof ProviderStackParamList> = RouteProp<
   ProviderStackParamList,
+  T
+>;
+
+export type GuardNavigationProp<T extends keyof GuardStackParamList> = NativeStackNavigationProp<
+  GuardStackParamList,
+  T
+>;
+
+export type CommitteeNavigationProp<T extends keyof CommitteeStackParamList> = NativeStackNavigationProp<
+  CommitteeStackParamList,
   T
 >;

@@ -19,12 +19,14 @@ import { theme } from '../../theme';
 import { Building } from '../../types/building';
 import { getBuildings } from '../../services/buildingService';
 import { updateGuard } from '../../services/guardService';
+import { getGuardShift, updateGuardShift } from '../../services/shiftService';
 import { ProviderStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 
 type EditRouteProp = RouteProp<ProviderStackParamList, 'EditGuard'>;
 
 const PHONE_REGEX = /^[+0-9\s\-()]{5,20}$/;
+const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 export const EditGuardScreen: React.FC = () => {
   const route = useRoute<EditRouteProp>();
@@ -53,32 +55,44 @@ export const EditGuardScreen: React.FC = () => {
       : ''
   );
 
+  // Guard Shift state
+  const [startTime, setStartTime] = useState<string>('08:00');
+  const [endTime, setEndTime] = useState<string>('20:00');
+
   const [errors, setErrors] = useState<{
     name?: string;
     phone?: string;
     buildingId?: string;
     monthlySalary?: string;
+    startTime?: string;
+    endTime?: string;
     general?: string;
   }>({});
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
-    async function loadBuildings() {
+    async function loadInitialData() {
       try {
-        const data = await getBuildings();
-        setBuildings(data);
+        const buildingsData = await getBuildings();
+        setBuildings(buildingsData);
+
+        const shiftData = await getGuardShift(guard._id);
+        if (shiftData) {
+          if (shiftData.startTime) setStartTime(shiftData.startTime);
+          if (shiftData.endTime) setEndTime(shiftData.endTime);
+        }
       } catch (err: any) {
         setErrors((prev) => ({
           ...prev,
-          general: 'Failed to load buildings directory.',
+          general: 'Failed to load initial guard configuration.',
         }));
       } finally {
         setIsLoadingBuildings(false);
       }
     }
-    loadBuildings();
-  }, []);
+    loadInitialData();
+  }, [guard._id]);
 
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
@@ -102,6 +116,14 @@ export const EditGuardScreen: React.FC = () => {
       }
     }
 
+    if (!TIME_REGEX.test(startTime.trim())) {
+      newErrors.startTime = 'Use HH:mm format (e.g. 08:00)';
+    }
+
+    if (!TIME_REGEX.test(endTime.trim())) {
+      newErrors.endTime = 'Use HH:mm format (e.g. 20:00)';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -113,6 +135,7 @@ export const EditGuardScreen: React.FC = () => {
     setErrors({});
 
     try {
+      // 1. Update Guard Profile details
       await updateGuard(guard._id, {
         name: name.trim(),
         phone: phone.trim() || undefined,
@@ -121,6 +144,12 @@ export const EditGuardScreen: React.FC = () => {
         designation: designation.trim() || undefined,
         joiningDate: joiningDate.trim() || undefined,
         monthlySalary: monthlySalary.trim() ? Number(monthlySalary.trim()) : undefined,
+      });
+
+      // 2. Update Guard Shift Schedule
+      await updateGuardShift(guard._id, {
+        startTime: startTime.trim(),
+        endTime: endTime.trim(),
       });
 
       navigation.goBack();
@@ -147,11 +176,11 @@ export const EditGuardScreen: React.FC = () => {
             <View style={styles.cardHeader}>
               <Ionicons name="create" size={28} color={theme.colors.guard} />
               <Text variant="title" style={styles.headerTitle}>
-                Edit Guard Profile
+                Edit Guard Profile & Shift
               </Text>
             </View>
             <Text variant="caption" style={styles.headerSubtitle}>
-              Update duty location or contract details for {guard.name}.
+              Update duty location, contract, or roster timing for {guard.name}.
             </Text>
 
             {errors.general ? (
@@ -164,7 +193,7 @@ export const EditGuardScreen: React.FC = () => {
             {isLoadingBuildings ? (
               <View style={styles.loadingBox}>
                 <ActivityIndicator color={theme.colors.primary} />
-                <Text style={styles.loadingText}>Fetching building options...</Text>
+                <Text style={styles.loadingText}>Fetching guard details...</Text>
               </View>
             ) : (
               <View style={styles.formGroup}>
@@ -208,6 +237,39 @@ export const EditGuardScreen: React.FC = () => {
                   }}
                   error={errors.buildingId}
                 />
+
+                {/* Shift Schedule Configuration Section */}
+                <View style={styles.shiftSectionCard}>
+                  <Text variant="heading" style={styles.shiftSectionTitle}>
+                    Duty Shift Timing Configuration
+                  </Text>
+                  <View style={styles.shiftInputsRow}>
+                    <View style={styles.timeCol}>
+                      <Input
+                        label="Shift Start (24h) *"
+                        placeholder="08:00"
+                        value={startTime}
+                        onChangeText={(t) => {
+                          setStartTime(t);
+                          if (errors.startTime) setErrors((prev) => ({ ...prev, startTime: undefined }));
+                        }}
+                        error={errors.startTime}
+                      />
+                    </View>
+                    <View style={styles.timeCol}>
+                      <Input
+                        label="Shift End (24h) *"
+                        placeholder="20:00"
+                        value={endTime}
+                        onChangeText={(t) => {
+                          setEndTime(t);
+                          if (errors.endTime) setErrors((prev) => ({ ...prev, endTime: undefined }));
+                        }}
+                        error={errors.endTime}
+                      />
+                    </View>
+                  </View>
+                </View>
 
                 <Input
                   label="Employee ID"
@@ -254,7 +316,7 @@ export const EditGuardScreen: React.FC = () => {
                 style={styles.cancelButton}
               />
               <Button
-                title={isSubmitting ? 'Saving...' : 'Update Guard'}
+                title={isSubmitting ? 'Saving...' : 'Save Shift & Profile'}
                 variant="primary"
                 onPress={handleUpdate}
                 disabled={isSubmitting || isLoadingBuildings}
@@ -320,6 +382,24 @@ const styles = StyleSheet.create({
   formGroup: {
     gap: theme.spacing.xs,
     marginBottom: theme.spacing.lg,
+  },
+  shiftSectionCard: {
+    backgroundColor: theme.colors.surfaceHover,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    marginVertical: theme.spacing.xs,
+  },
+  shiftSectionTitle: {
+    fontSize: theme.typography.fontSizes.sm,
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.xs,
+  },
+  shiftInputsRow: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+  },
+  timeCol: {
+    flex: 1,
   },
   buttonRow: {
     flexDirection: 'row',
