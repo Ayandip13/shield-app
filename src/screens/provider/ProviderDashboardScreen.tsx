@@ -110,8 +110,46 @@ export const ProviderDashboardScreen: React.FC = () => {
           </View>
         </Card>
 
-        {/* Quick Action Button */}
+        {/* Quick Action Navigation Items */}
         <View style={styles.quickActionContainer}>
+          <Text variant="heading" style={styles.navSectionTitle}>
+            Quick Operations
+          </Text>
+          <View style={styles.navButtonsRow}>
+            <TouchableOpacity
+              style={styles.navCardBtn}
+              onPress={() => navigation.navigate('BuildingsList')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="business" size={24} color={theme.colors.primary} />
+              <Text variant="body" style={styles.navCardText}>
+                Buildings
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.navCardBtn}
+              onPress={() => navigation.navigate('GuardsList')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="shield-checkmark" size={24} color={theme.colors.guard} />
+              <Text variant="body" style={styles.navCardText}>
+                Guards
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.navCardBtn}
+              onPress={() => navigation.navigate('CommitteeList')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="people" size={24} color={theme.colors.committee} />
+              <Text variant="body" style={styles.navCardText}>
+                Committee
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           <Button
             title="+ Add Building"
             variant="primary"
@@ -351,6 +389,38 @@ const styles = StyleSheet.create({
   },
   quickActionContainer: {
     marginBottom: theme.spacing.lg,
+  },
+  navSectionTitle: {
+    color: theme.colors.textPrimary,
+    marginBottom: theme.spacing.sm,
+  },
+  navButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
+  },
+  navCardBtn: {
+    flex: 1,
+    backgroundColor: theme.colors.surface,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xs,
+    borderRadius: theme.borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.surfaceBorder,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  navCardText: {
+    marginTop: theme.spacing.xs,
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.textPrimary,
   },
   addBuildingButton: {
     borderRadius: theme.borderRadius.md,
