@@ -129,7 +129,7 @@ export const CommitteeListScreen: React.FC = () => {
       {/* Top Header & Search Bar */}
       <View style={styles.headerBar}>
         <View style={styles.titleRow}>
-          <Text variant="title" style={styles.screenTitle}>
+          <Text variant="subtitle" style={styles.screenTitle}>
             Building Committee
           </Text>
           <Button
@@ -141,7 +141,7 @@ export const CommitteeListScreen: React.FC = () => {
         </View>
 
         <Input
-          placeholder="Search by member name, email, phone or building..."
+          placeholder="Search by member name, email or phone..."
           value={searchQuery}
           onChangeText={setSearchQuery}
           containerStyle={styles.searchInput}
@@ -228,6 +228,7 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     color: theme.colors.textPrimary,
+    fontWeight: 'bold',
   },
   searchInput: {
     marginVertical: theme.spacing.xs,

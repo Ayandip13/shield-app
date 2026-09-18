@@ -37,6 +37,12 @@ export const GuardDetailsScreen: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchDetails = async (isPullToRefresh = false) => {
+    if (!guardId) {
+      setErrorMessage('Missing guard identifier.');
+      setIsLoading(false);
+      return;
+    }
+
     if (isPullToRefresh) {
       setIsRefreshing(true);
     } else {
@@ -54,6 +60,7 @@ export const GuardDetailsScreen: React.FC = () => {
       setIsRefreshing(false);
     }
   };
+
 
   useFocusEffect(
     useCallback(() => {

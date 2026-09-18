@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     paddingVertical: theme.spacing.md,
-    fontSize: theme.typography.fontSizes.md,
+    fontSize: theme.typography.fontSizes.sm,
     color: theme.colors.textPrimary,
   },
   eyeIconButton: {

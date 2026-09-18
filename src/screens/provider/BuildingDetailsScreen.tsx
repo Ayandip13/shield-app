@@ -221,6 +221,22 @@ export const BuildingDetailsScreen: React.FC = () => {
 
           <View style={styles.actionButtonsCol}>
             <Button
+              title="+ Add Guard for Building"
+              variant="primary"
+              leftIcon={<Ionicons name="person-add-outline" size={18} color="#FFFFFF" />}
+              onPress={() => navigation.navigate('AddGuard', { buildingId: building._id })}
+              style={styles.actionBtn}
+            />
+
+            <Button
+              title="+ Add Committee Member"
+              variant="outline"
+              leftIcon={<Ionicons name="people-outline" size={18} color={theme.colors.primary} />}
+              onPress={() => navigation.navigate('AddCommitteeMember', { buildingId: building._id })}
+              style={styles.actionBtn}
+            />
+
+            <Button
               title="Edit Building Details"
               variant="outline"
               leftIcon={<Ionicons name="create-outline" size={18} color={theme.colors.primary} />}
@@ -253,6 +269,7 @@ export const BuildingDetailsScreen: React.FC = () => {
             />
           </View>
         </Card>
+
       </ScrollView>
     </ScreenWrapper>
   );

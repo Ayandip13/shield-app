@@ -37,6 +37,12 @@ export const CommitteeDetailsScreen: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchDetails = async (isPullToRefresh = false) => {
+    if (!memberId) {
+      setErrorMessage('Missing committee member identifier.');
+      setIsLoading(false);
+      return;
+    }
+
     if (isPullToRefresh) {
       setIsRefreshing(true);
     } else {
@@ -54,6 +60,7 @@ export const CommitteeDetailsScreen: React.FC = () => {
       setIsRefreshing(false);
     }
   };
+
 
   useFocusEffect(
     useCallback(() => {

@@ -348,11 +348,15 @@ export const CommitteeHomeScreen: React.FC = () => {
         {recentActivities.length === 0 ? (
           <Card variant="outlined" style={styles.emptyCard}>
             <Ionicons name="notifications-off-outline" size={32} color={theme.colors.textMuted} />
-            <Text variant="body" style={styles.emptyTitle}>
-              No security activities recorded today
+            <Text variant="heading" style={styles.emptyTitle}>
+              No security activity yet
+            </Text>
+            <Text variant="caption" style={styles.emptySubtitle}>
+              Activity will appear here as guards check in and visitors are recorded.
             </Text>
           </Card>
         ) : (
+
           <View style={styles.activityList}>
             {recentActivities.slice(0, 5).map((act) => (
               <Card key={act.id} variant="flat" style={styles.activityItemCard}>
@@ -618,8 +622,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     marginTop: theme.spacing.xs,
+    color: theme.colors.textPrimary,
+  },
+  emptySubtitle: {
+    textAlign: 'center',
+    marginTop: 2,
     color: theme.colors.textSecondary,
   },
+
   activityList: {
     gap: theme.spacing.xs,
   },

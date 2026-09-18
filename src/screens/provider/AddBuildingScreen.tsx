@@ -102,7 +102,7 @@ export const AddBuildingScreen: React.FC = () => {
           <Card variant="elevated" style={styles.formCard}>
             <View style={styles.cardHeader}>
               <Ionicons name="business" size={28} color={theme.colors.primary} />
-              <Text variant="title" style={styles.headerTitle}>
+              <Text variant="subtitle" style={styles.headerTitle}>
                 Register New Building
               </Text>
             </View>
@@ -215,6 +215,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: theme.colors.textPrimary,
+    fontWeight: 'bold',
   },
   headerSubtitle: {
     color: theme.colors.textSecondary,

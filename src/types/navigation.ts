@@ -12,11 +12,11 @@ export type ProviderStackParamList = {
   EditBuilding: { building: Building };
   GuardsList: undefined;
   GuardDetails: { guardId: string };
-  AddGuard: undefined;
+  AddGuard: { buildingId?: string } | undefined;
   EditGuard: { guard: Guard };
   CommitteeList: undefined;
   CommitteeDetails: { memberId: string };
-  AddCommitteeMember: undefined;
+  AddCommitteeMember: { buildingId?: string } | undefined;
   EditCommitteeMember: { member: CommitteeMember };
   ProviderAttendance: undefined;
   ProviderEntryExit: undefined;

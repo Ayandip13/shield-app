@@ -123,7 +123,7 @@ export const EditProfileScreen: React.FC = () => {
               {/* Read-Only Account Identity Fields */}
               <View style={styles.readOnlyContainer}>
                 <Text variant="caption" style={styles.readOnlyNotice}>
-                  🔒 Account & Role Metadata (Read-Only)
+                  Account & Role Metadata (Read-Only)
                 </Text>
 
                 <View style={styles.readOnlyField}>

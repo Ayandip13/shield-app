@@ -301,12 +301,83 @@ export const ProviderDashboardScreen: React.FC = () => {
           </Card>
         ) : (
           <>
+            {/* First-Time Provider Onboarding Card */}
+            {(summary?.totalBuildings === 0 || buildings.length === 0) && (
+              <Card variant="elevated" style={styles.onboardingCard}>
+                <View style={styles.onboardingHeaderRow}>
+                  <Ionicons name="sparkles" size={24} color={theme.colors.primary} />
+                  <Text variant="heading" style={styles.onboardingTitle}>
+                    Welcome to SecuShield
+                  </Text>
+                </View>
+                <Text variant="body" style={styles.onboardingSubtitle}>
+                  Let's get your security operation set up:
+                </Text>
+
+                <View style={styles.onboardingStepsList}>
+                  <View style={styles.onboardingStepItem}>
+                    <View style={styles.stepBadge}>
+                      <Text style={styles.stepBadgeText}>1</Text>
+                    </View>
+                    <Text variant="body" style={styles.stepText}>
+                      Add your first building
+                    </Text>
+                  </View>
+
+                  <View style={styles.onboardingStepItem}>
+                    <View style={styles.stepBadge}>
+                      <Text style={styles.stepBadgeText}>2</Text>
+                    </View>
+                    <Text variant="body" style={styles.stepText}>
+                      Add the building's guards
+                    </Text>
+                  </View>
+
+                  <View style={styles.onboardingStepItem}>
+                    <View style={styles.stepBadge}>
+                      <Text style={styles.stepBadgeText}>3</Text>
+                    </View>
+                    <Text variant="body" style={styles.stepText}>
+                      Add committee members
+                    </Text>
+                  </View>
+
+                  <View style={styles.onboardingStepItem}>
+                    <View style={styles.stepBadge}>
+                      <Text style={styles.stepBadgeText}>4</Text>
+                    </View>
+                    <Text variant="body" style={styles.stepText}>
+                      Start tracking attendance and entries
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.onboardingActionsRow}>
+                  <Button
+                    title="+ Add Building"
+                    variant="primary"
+                    size="sm"
+                    onPress={() => navigation.navigate('AddBuilding')}
+                    style={styles.onboardingBtn}
+                  />
+                  <Button
+                    title="Manage Guards"
+                    variant="outline"
+                    size="sm"
+                    onPress={() => navigation.navigate('GuardsList')}
+                    style={styles.onboardingBtn}
+                  />
+                </View>
+              </Card>
+            )}
+
             {/* Live Operational Metrics Section */}
             <View style={styles.sectionHeader}>
               <Text variant="heading" style={styles.sectionTitle}>
                 Live Security Metrics
               </Text>
             </View>
+
 
             {/* Metrics Row 1 */}
             <View style={styles.metricsGrid}>
@@ -798,4 +869,62 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontWeight: '600',
   },
+  onboardingCard: {
+    padding: theme.spacing.lg,
+    backgroundColor: '#EFF6FF',
+    borderColor: '#BFDBFE',
+    borderWidth: 1,
+    marginBottom: theme.spacing.md,
+  },
+  onboardingHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    marginBottom: theme.spacing.xs,
+  },
+  onboardingTitle: {
+    fontSize: theme.typography.fontSizes.lg,
+    fontWeight: '700',
+    color: theme.colors.primaryDark,
+  },
+  onboardingSubtitle: {
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.md,
+  },
+  onboardingStepsList: {
+    gap: theme.spacing.xs,
+    marginBottom: theme.spacing.md,
+  },
+  onboardingStepItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  stepBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  stepText: {
+    fontSize: theme.typography.fontSizes.sm,
+    color: theme.colors.textPrimary,
+    fontWeight: '500',
+  },
+  onboardingActionsRow: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.xs,
+  },
+  onboardingBtn: {
+    flex: 1,
+  },
 });
+

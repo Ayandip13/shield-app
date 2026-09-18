@@ -173,23 +173,54 @@ export const GuardHomeScreen: React.FC = () => {
                 </View>
               ) : null}
 
-              {dutyStatus ? (
-                <View style={styles.statusRowContainer}>
-                  <View style={styles.dutyStatusBadge}>
-                    <Ionicons
-                      name={dutyStatus.status === 'CHECKED_IN' ? 'checkmark-circle' : 'time-outline'}
-                      size={16}
-                      color={dutyStatus.status === 'CHECKED_IN' ? '#065F46' : theme.colors.textSecondary}
-                    />
-                    <Text style={styles.dutyStatusText}>
-                      Today's Duty: {dutyStatus.status === 'CHECKED_IN' ? 'Checked In' : dutyStatus.status === 'CHECKED_OUT' ? 'Checked Out' : 'Not Checked In'}
+              {/* Prominent Duty Status Banner */}
+              <View style={styles.dutyCardBanner}>
+                {dutyStatus?.status === 'CHECKED_IN' ? (
+                  <View style={styles.onDutyContent}>
+                    <View style={styles.dutyHeaderRow}>
+                      <View style={styles.statusDotGreen} />
+                      <Text variant="heading" style={styles.onDutyTitle}>
+                        You're on duty
+                      </Text>
+                    </View>
+                    <Text variant="caption" style={styles.dutySubText}>
+                      Checked in at {dutyStatus?.checkInTime ? new Date(dutyStatus.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '08:00 AM'}
                     </Text>
+                    <Button
+                      title="Manage Shift & Attendance"
+                      variant="primary"
+                      size="sm"
+                      leftIcon={<Ionicons name="time-outline" size={16} color="#FFFFFF" />}
+                      onPress={() => navigation.navigate('GuardAttendance')}
+                      style={styles.dutyActionBtn}
+                    />
                   </View>
-                </View>
-              ) : null}
+                ) : (
+                  <View style={styles.offDutyContent}>
+                    <View style={styles.dutyHeaderRow}>
+                      <View style={styles.statusDotGray} />
+                      <Text variant="heading" style={styles.offDutyTitle}>
+                        You're currently off duty
+                      </Text>
+                    </View>
+                    <Text variant="caption" style={styles.dutySubText}>
+                      Check in when you begin your shift.
+                    </Text>
+                    <Button
+                      title="Check In Now"
+                      variant="primary"
+                      size="sm"
+                      leftIcon={<Ionicons name="log-in-outline" size={16} color="#FFFFFF" />}
+                      onPress={() => navigation.navigate('GuardAttendance')}
+                      style={styles.dutyActionBtn}
+                    />
+                  </View>
+                )}
+              </View>
             </>
           )}
         </Card>
+
 
         {/* Duty Operations Section */}
         <View style={styles.modulesSection}>
@@ -518,4 +549,49 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: theme.colors.textPrimary,
   },
+  dutyCardBanner: {
+    marginTop: theme.spacing.md,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.surfaceHover,
+    borderWidth: 1,
+    borderColor: theme.colors.surfaceBorder,
+  },
+  onDutyContent: {},
+  offDutyContent: {},
+  dutyHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+  },
+  statusDotGreen: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: theme.colors.success,
+  },
+  statusDotGray: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: theme.colors.textMuted,
+  },
+  onDutyTitle: {
+    fontSize: theme.typography.fontSizes.md,
+    fontWeight: '700',
+    color: theme.colors.success,
+  },
+  offDutyTitle: {
+    fontSize: theme.typography.fontSizes.md,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+  },
+  dutySubText: {
+    color: theme.colors.textSecondary,
+    marginVertical: 4,
+  },
+  dutyActionBtn: {
+    marginTop: theme.spacing.xs,
+  },
 });
+
