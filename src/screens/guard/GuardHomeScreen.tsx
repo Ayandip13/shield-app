@@ -17,7 +17,9 @@ import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../theme';
 import { Guard } from '../../types/guard';
 import { getMyGuardProfile } from '../../services/guardService';
+import { getGuardDashboard } from '../../services/dashboardService';
 import { GuardStackParamList } from '../../types/navigation';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { Ionicons } from '@expo/vector-icons';
 
 type NavigationProp = NativeStackNavigationProp<GuardStackParamList, 'GuardHome'>;
@@ -26,15 +28,23 @@ export const GuardHomeScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState<Guard | null>(null);
+  const [dutyStatus, setDutyStatus] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
 
   useEffect(() => {
     async function loadGuardProfile() {
       try {
-        const data = await getMyGuardProfile();
-        setProfile(data);
+        const [profData, dashData] = await Promise.all([
+          getMyGuardProfile().catch(() => null),
+          getGuardDashboard().catch(() => null),
+        ]);
+        setProfile(profData);
+        if (dashData?.todayStatus) {
+          setDutyStatus(dashData.todayStatus);
+        }
       } catch (err: any) {
-        // Fallback gracefully if endpoint returns basic user info
+        // Fallback gracefully
       } finally {
         setIsLoading(false);
       }
@@ -85,7 +95,7 @@ export const GuardHomeScreen: React.FC = () => {
 
             <TouchableOpacity
               style={styles.logoutBtn}
-              onPress={logout}
+              onPress={() => setShowLogoutModal(true)}
               activeOpacity={0.7}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
@@ -127,6 +137,21 @@ export const GuardHomeScreen: React.FC = () => {
                     <Text variant="caption">Employee ID</Text>
                     <Text variant="body" style={styles.infoValText}>
                       {profile.employeeId}
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
+
+              {dutyStatus ? (
+                <View style={styles.statusRowContainer}>
+                  <View style={styles.dutyStatusBadge}>
+                    <Ionicons
+                      name={dutyStatus.status === 'CHECKED_IN' ? 'checkmark-circle' : 'time-outline'}
+                      size={16}
+                      color={dutyStatus.status === 'CHECKED_IN' ? '#065F46' : theme.colors.textSecondary}
+                    />
+                    <Text style={styles.dutyStatusText}>
+                      Today's Duty: {dutyStatus.status === 'CHECKED_IN' ? 'Checked In' : dutyStatus.status === 'CHECKED_OUT' ? 'Checked Out' : 'Not Checked In'}
                     </Text>
                   </View>
                 </View>
@@ -182,13 +207,13 @@ export const GuardHomeScreen: React.FC = () => {
 
             <TouchableOpacity
               style={styles.moduleCard}
-              onPress={() => handlePlaceholderPress('Entry / Exit Logs')}
+              onPress={() => navigation.navigate('GuardEntryExit')}
               activeOpacity={0.7}
             >
               <View style={styles.moduleHeader}>
                 <Ionicons name="log-in-outline" size={26} color={theme.colors.primary} />
-                <View style={styles.comingSoonBadge}>
-                  <Text style={styles.comingSoonText}>SOON</Text>
+                <View style={styles.activeBadge}>
+                  <Text style={styles.activeBadgeText}>ACTIVE</Text>
                 </View>
               </View>
               <Text variant="heading" style={styles.moduleTitle}>
@@ -204,10 +229,21 @@ export const GuardHomeScreen: React.FC = () => {
         <Button
           title="Sign Out of Terminal"
           variant="outline"
-          onPress={logout}
+          onPress={() => setShowLogoutModal(true)}
           style={styles.logoutButton}
         />
       </ScrollView>
+
+      <ConfirmModal
+        visible={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={() => {
+          setShowLogoutModal(false);
+          logout();
+        }}
+        title="Sign Out of Guard Terminal"
+        message="Are you sure you want to sign out? You will need to log back in to perform guard duty operations."
+      />
     </ScreenWrapper>
   );
 };
@@ -352,5 +388,26 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     marginTop: theme.spacing.md,
+  },
+  statusRowContainer: {
+    marginTop: theme.spacing.xs,
+    paddingTop: theme.spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.surfaceBorder,
+  },
+  dutyStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+    alignSelf: 'flex-start',
+    backgroundColor: theme.colors.surfaceHover,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 4,
+    borderRadius: theme.borderRadius.sm,
+  },
+  dutyStatusText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.textPrimary,
   },
 });

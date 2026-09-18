@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
 import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../theme';
 
 export const ProviderHomeScreen: React.FC = () => {
   const { user, logout } = useAuth();
+  const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
 
   return (
     <ScreenWrapper style={styles.container}>
@@ -40,10 +42,21 @@ export const ProviderHomeScreen: React.FC = () => {
         <Button
           title="Sign Out"
           variant="outline"
-          onPress={logout}
+          onPress={() => setShowLogoutModal(true)}
           style={styles.logoutButton}
         />
       </Card>
+
+      <ConfirmModal
+        visible={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={() => {
+          setShowLogoutModal(false);
+          logout();
+        }}
+        title="Sign Out of Provider Admin"
+        message="Are you sure you want to sign out of your account?"
+      />
     </ScreenWrapper>
   );
 };

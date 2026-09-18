@@ -15,6 +15,8 @@ import { AddCommitteeMemberScreen } from '../screens/provider/AddCommitteeMember
 import { CommitteeDetailsScreen } from '../screens/provider/CommitteeDetailsScreen';
 import { EditCommitteeMemberScreen } from '../screens/provider/EditCommitteeMemberScreen';
 import { ProviderAttendanceScreen } from '../screens/provider/ProviderAttendanceScreen';
+import { ProviderEntryExitScreen } from '../screens/provider/ProviderEntryExitScreen';
+import { ProviderSecurityActivityScreen } from '../screens/provider/ProviderSecurityActivityScreen';
 import { theme } from '../theme';
 
 const Stack = createNativeStackNavigator<ProviderStackParamList>();
@@ -106,6 +108,16 @@ export const ProviderAdminNavigator: React.FC = () => {
         name="ProviderAttendance"
         component={ProviderAttendanceScreen}
         options={{ title: 'Attendance Overview' }}
+      />
+      <Stack.Screen
+        name="ProviderEntryExit"
+        component={ProviderEntryExitScreen}
+        options={{ title: 'Visitor Entry / Exit Logs' }}
+      />
+      <Stack.Screen
+        name="ProviderSecurityActivity"
+        component={ProviderSecurityActivityScreen}
+        options={{ title: 'Security Activity Log' }}
       />
     </Stack.Navigator>
   );

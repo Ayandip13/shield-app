@@ -4,6 +4,10 @@ import { GuardStackParamList } from '../types/navigation';
 import { GuardHomeScreen } from '../screens/guard/GuardHomeScreen';
 import { GuardAttendanceScreen } from '../screens/guard/GuardAttendanceScreen';
 import { GuardShiftScreen } from '../screens/guard/GuardShiftScreen';
+import { GuardEntryExitScreen } from '../screens/guard/GuardEntryExitScreen';
+import { AddEntryLogScreen } from '../screens/guard/AddEntryLogScreen';
+import { EntryLogHistoryScreen } from '../screens/guard/EntryLogHistoryScreen';
+import { EntryLogDetailsScreen } from '../screens/guard/EntryLogDetailsScreen';
 import { theme } from '../theme';
 
 const Stack = createNativeStackNavigator<GuardStackParamList>();
@@ -40,6 +44,26 @@ export const GuardNavigator: React.FC = () => {
         name="GuardShift"
         component={GuardShiftScreen}
         options={{ title: 'My Shift Schedule' }}
+      />
+      <Stack.Screen
+        name="GuardEntryExit"
+        component={GuardEntryExitScreen}
+        options={{ title: 'Entry / Exit Terminal' }}
+      />
+      <Stack.Screen
+        name="AddEntryLog"
+        component={AddEntryLogScreen}
+        options={{ title: 'Record Building Entry' }}
+      />
+      <Stack.Screen
+        name="EntryLogHistory"
+        component={EntryLogHistoryScreen}
+        options={{ title: 'Visitor & Access History' }}
+      />
+      <Stack.Screen
+        name="EntryLogDetails"
+        component={EntryLogDetailsScreen}
+        options={{ title: 'Entry Log Details' }}
       />
     </Stack.Navigator>
   );

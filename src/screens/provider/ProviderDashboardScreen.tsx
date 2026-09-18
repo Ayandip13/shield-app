@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  FlatList,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -17,7 +18,11 @@ import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../theme';
 import { Building } from '../../types/building';
 import { getBuildings } from '../../services/buildingService';
+import { getDashboard } from '../../services/dashboardService';
+import { ProviderDashboardData, ActivityItem } from '../../types/dashboard';
+import { formatRelativeDateTime } from '../../utils/dateFormatter';
 import { ProviderStackParamList } from '../../types/navigation';
+import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { Ionicons } from '@expo/vector-icons';
 
 type NavigationProp = NativeStackNavigationProp<ProviderStackParamList, 'ProviderDashboard'>;
@@ -26,10 +31,13 @@ export const ProviderDashboardScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user, logout } = useAuth();
 
+  const [selectedBuildingId, setSelectedBuildingId] = useState<string | undefined>(undefined);
   const [buildings, setBuildings] = useState<Building[]>([]);
+  const [dashboardData, setDashboardData] = useState<ProviderDashboardData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
 
   const fetchDashboardData = async (isPullToRefresh = false) => {
     if (isPullToRefresh) {
@@ -40,10 +48,14 @@ export const ProviderDashboardScreen: React.FC = () => {
     setErrorMessage(null);
 
     try {
-      const data = await getBuildings();
-      setBuildings(data);
+      const [bList, dash] = await Promise.all([
+        getBuildings(),
+        getDashboard(selectedBuildingId),
+      ]);
+      setBuildings(bList);
+      setDashboardData(dash as ProviderDashboardData);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to load buildings data.');
+      setErrorMessage(err.message || 'Failed to load operational dashboard data.');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -53,12 +65,8 @@ export const ProviderDashboardScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       fetchDashboardData();
-    }, [])
+    }, [selectedBuildingId])
   );
-
-  const activeCount = buildings.filter((b) => b.isActive).length;
-  const inactiveCount = buildings.filter((b) => !b.isActive).length;
-  const recentBuildings = buildings.slice(0, 4);
 
   const getInitials = (name?: string) => {
     if (!name) return 'PA';
@@ -68,6 +76,22 @@ export const ProviderDashboardScreen: React.FC = () => {
     }
     return name.slice(0, 2).toUpperCase();
   };
+
+  const getActivityIcon = (type: ActivityItem['type']) => {
+    switch (type) {
+      case 'ENTRY':
+        return <Ionicons name="log-in" size={18} color={theme.colors.success} />;
+      case 'EXIT':
+        return <Ionicons name="log-out" size={18} color="#D97706" />;
+      case 'ATTENDANCE':
+        return <Ionicons name="shield-checkmark" size={18} color={theme.colors.primary} />;
+      default:
+        return <Ionicons name="ellipse" size={18} color={theme.colors.textMuted} />;
+    }
+  };
+
+  const summary = dashboardData?.summary;
+  const recentActivities = dashboardData?.recentActivity || [];
 
   return (
     <ScreenWrapper style={styles.container}>
@@ -94,14 +118,14 @@ export const ProviderDashboardScreen: React.FC = () => {
                   {user?.name || 'Provider Admin'}
                 </Text>
                 <View style={styles.roleBadge}>
-                  <Text style={styles.roleBadgeText}>PROVIDER ADMIN</Text>
+                  <Text style={styles.roleBadgeText}>PROVIDER CONTROL CENTER</Text>
                 </View>
               </View>
             </View>
 
             <TouchableOpacity
               style={styles.logoutBtn}
-              onPress={logout}
+              onPress={() => setShowLogoutModal(true)}
               activeOpacity={0.7}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
@@ -110,7 +134,38 @@ export const ProviderDashboardScreen: React.FC = () => {
           </View>
         </Card>
 
-        {/* Quick Action Navigation Items */}
+        {/* Building Filter Bar */}
+        {buildings.length > 0 && (
+          <View style={styles.filterSection}>
+            <Text variant="caption" style={styles.filterLabel}>
+              Filter Operational View:
+            </Text>
+            <FlatList
+              horizontal
+              data={[{ _id: 'ALL', name: 'All Buildings' }, ...buildings]}
+              keyExtractor={(b) => b._id}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.pickerContainer}
+              renderItem={({ item }) => {
+                const isSelected =
+                  item._id === 'ALL' ? !selectedBuildingId : selectedBuildingId === item._id;
+                return (
+                  <TouchableOpacity
+                    style={[styles.chip, isSelected && styles.chipActive]}
+                    onPress={() => setSelectedBuildingId(item._id === 'ALL' ? undefined : item._id)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>
+                      {item.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        )}
+
+        {/* Quick Operations Navigation Grid */}
         <View style={styles.quickActionContainer}>
           <Text variant="heading" style={styles.navSectionTitle}>
             Quick Operations
@@ -121,8 +176,8 @@ export const ProviderDashboardScreen: React.FC = () => {
               onPress={() => navigation.navigate('BuildingsList')}
               activeOpacity={0.7}
             >
-              <Ionicons name="business" size={22} color={theme.colors.primary} />
-              <Text variant="body" style={styles.navCardText}>
+              <Ionicons name="business" size={20} color={theme.colors.primary} />
+              <Text variant="body" style={styles.navCardText} numberOfLines={1}>
                 Buildings
               </Text>
             </TouchableOpacity>
@@ -132,8 +187,8 @@ export const ProviderDashboardScreen: React.FC = () => {
               onPress={() => navigation.navigate('GuardsList')}
               activeOpacity={0.7}
             >
-              <Ionicons name="shield-checkmark" size={22} color={theme.colors.guard} />
-              <Text variant="body" style={styles.navCardText}>
+              <Ionicons name="shield-checkmark" size={20} color={theme.colors.guard} />
+              <Text variant="body" style={styles.navCardText} numberOfLines={1}>
                 Guards
               </Text>
             </TouchableOpacity>
@@ -143,8 +198,8 @@ export const ProviderDashboardScreen: React.FC = () => {
               onPress={() => navigation.navigate('CommitteeList')}
               activeOpacity={0.7}
             >
-              <Ionicons name="people" size={22} color={theme.colors.committee} />
-              <Text variant="body" style={styles.navCardText}>
+              <Ionicons name="people" size={20} color={theme.colors.committee} />
+              <Text variant="body" style={styles.navCardText} numberOfLines={1}>
                 Committee
               </Text>
             </TouchableOpacity>
@@ -154,33 +209,37 @@ export const ProviderDashboardScreen: React.FC = () => {
               onPress={() => navigation.navigate('ProviderAttendance')}
               activeOpacity={0.7}
             >
-              <Ionicons name="time" size={22} color={theme.colors.primaryDark} />
-              <Text variant="body" style={styles.navCardText}>
+              <Ionicons name="time" size={20} color={theme.colors.primaryDark} />
+              <Text variant="body" style={styles.navCardText} numberOfLines={1}>
                 Attendance
               </Text>
             </TouchableOpacity>
-          </View>
 
-          <Button
-            title="+ Add Building"
-            variant="primary"
-            onPress={() => navigation.navigate('AddBuilding')}
-            style={styles.addBuildingButton}
-          />
+            <TouchableOpacity
+              style={styles.navCardBtn}
+              onPress={() => navigation.navigate('ProviderEntryExit')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="walk" size={20} color={theme.colors.warning} />
+              <Text variant="body" style={styles.navCardText} numberOfLines={1}>
+                Entry Logs
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Loading State */}
         {isLoading && !isRefreshing ? (
           <View style={styles.centerContainer}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.loadingText}>Loading Security Provider Overview...</Text>
+            <Text style={styles.loadingText}>Loading Security Metrics...</Text>
           </View>
         ) : errorMessage ? (
           /* Error State */
           <Card variant="outlined" style={styles.errorCard}>
             <Ionicons name="alert-circle-outline" size={36} color={theme.colors.danger} />
             <Text variant="heading" style={styles.errorTitle}>
-              Unable to Load Data
+              Unable to Load Dashboard
             </Text>
             <Text variant="caption" style={styles.errorSubtitle}>
               {errorMessage}
@@ -195,13 +254,20 @@ export const ProviderDashboardScreen: React.FC = () => {
           </Card>
         ) : (
           <>
-            {/* Metric Summary Cards */}
-            <View style={styles.metricsRow}>
-              <Card variant="flat" style={[styles.metricCard, styles.totalCard]}>
-                <View style={styles.metricIconRow}>
-                  <Ionicons name="business" size={24} color={theme.colors.primary} />
+            {/* Live Operational Metrics Section */}
+            <View style={styles.sectionHeader}>
+              <Text variant="heading" style={styles.sectionTitle}>
+                Live Security Metrics
+              </Text>
+            </View>
+
+            {/* Metrics Row 1 */}
+            <View style={styles.metricsGrid}>
+              <Card variant="flat" style={[styles.metricCard, styles.cardBlue]}>
+                <View style={styles.metricHeaderRow}>
+                  <Ionicons name="business" size={20} color={theme.colors.primary} />
                   <Text variant="title" style={styles.metricNumber}>
-                    {buildings.length}
+                    {summary?.totalBuildings ?? 0}
                   </Text>
                 </View>
                 <Text variant="caption" style={styles.metricLabel}>
@@ -209,123 +275,121 @@ export const ProviderDashboardScreen: React.FC = () => {
                 </Text>
               </Card>
 
-              <Card variant="flat" style={[styles.metricCard, styles.activeCard]}>
-                <View style={styles.metricIconRow}>
-                  <Ionicons name="checkmark-circle" size={24} color={theme.colors.success} />
+              <Card variant="flat" style={[styles.metricCard, styles.cardGreen]}>
+                <View style={styles.metricHeaderRow}>
+                  <Ionicons name="shield-checkmark" size={20} color={theme.colors.success} />
                   <Text variant="title" style={styles.metricNumber}>
-                    {activeCount}
+                    {summary?.activeGuards ?? 0}
                   </Text>
                 </View>
                 <Text variant="caption" style={styles.metricLabel}>
-                  Active Buildings
-                </Text>
-              </Card>
-
-              <Card variant="flat" style={[styles.metricCard, styles.inactiveCard]}>
-                <View style={styles.metricIconRow}>
-                  <Ionicons name="pause-circle" size={24} color={theme.colors.textMuted} />
-                  <Text variant="title" style={styles.metricNumber}>
-                    {inactiveCount}
-                  </Text>
-                </View>
-                <Text variant="caption" style={styles.metricLabel}>
-                  Inactive Buildings
+                  Active Guards
                 </Text>
               </Card>
             </View>
 
-            {/* Recent Buildings Section */}
+            {/* Metrics Row 2: Today's Security Attendance & Visitors */}
+            <Card variant="outlined" style={styles.summaryBox}>
+              <Text variant="caption" style={styles.boxTitle}>
+                TODAY'S SECURITY ACTIVITY
+              </Text>
+              <View style={styles.summaryGrid}>
+                <View style={styles.summaryItem}>
+                  <Text variant="caption" style={styles.summaryItemLabel}>
+                    Present Today
+                  </Text>
+                  <Text variant="title" style={styles.summaryItemVal}>
+                    {summary?.presentToday ?? 0}
+                  </Text>
+                </View>
+
+                <View style={styles.verticalDivider} />
+
+                <View style={styles.summaryItem}>
+                  <Text variant="caption" style={styles.summaryItemLabel}>
+                    Currently On Duty
+                  </Text>
+                  <Text variant="title" style={[styles.summaryItemVal, { color: theme.colors.primary }]}>
+                    {summary?.currentlyOnDuty ?? 0}
+                  </Text>
+                </View>
+
+                <View style={styles.verticalDivider} />
+
+                <View style={styles.summaryItem}>
+                  <Text variant="caption" style={styles.summaryItemLabel}>
+                    Currently Inside
+                  </Text>
+                  <Text variant="title" style={[styles.summaryItemVal, { color: '#D97706' }]}>
+                    {summary?.currentlyInside ?? 0}
+                  </Text>
+                </View>
+
+                <View style={styles.verticalDivider} />
+
+                <View style={styles.summaryItem}>
+                  <Text variant="caption" style={styles.summaryItemLabel}>
+                    Today's Entries
+                  </Text>
+                  <Text variant="title" style={styles.summaryItemVal}>
+                    {summary?.todayEntries ?? 0}
+                  </Text>
+                </View>
+              </View>
+            </Card>
+
+            {/* Recent Security Activity Stream Section */}
             <View style={styles.sectionHeader}>
               <Text variant="heading" style={styles.sectionTitle}>
-                Managed Buildings
+                Recent Security Activity
               </Text>
-              {buildings.length > 0 && (
-                <TouchableOpacity
-                  onPress={() => navigation.navigate('BuildingsList')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.viewAllText}>View All ({buildings.length}) →</Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate('ProviderSecurityActivity', {
+                    buildingId: selectedBuildingId,
+                  })
+                }
+                activeOpacity={0.7}
+              >
+                <Text style={styles.viewAllText}>View All →</Text>
+              </TouchableOpacity>
             </View>
 
-            {recentBuildings.length === 0 ? (
-              /* Empty State */
+            {recentActivities.length === 0 ? (
               <Card variant="outlined" style={styles.emptyCard}>
-                <Ionicons name="business-outline" size={48} color={theme.colors.textMuted} />
-                <Text variant="heading" style={styles.emptyTitle}>
-                  No buildings registered yet
+                <Ionicons name="notifications-off-outline" size={36} color={theme.colors.textMuted} />
+                <Text variant="body" style={styles.emptyTitle}>
+                  No recent activities recorded today
                 </Text>
                 <Text variant="caption" style={styles.emptySubtitle}>
-                  Add your first building to start managing security operations and guards.
+                  Guard check-ins and visitor entry logs will appear here in real-time.
                 </Text>
-                <Button
-                  title="+ Add Building"
-                  variant="primary"
-                  size="sm"
-                  onPress={() => navigation.navigate('AddBuilding')}
-                  style={styles.emptyAddBtn}
-                />
               </Card>
             ) : (
-              /* Recent Buildings List */
-              <View style={styles.buildingsListContainer}>
-                {recentBuildings.map((building) => (
-                  <Card
-                    key={building._id}
-                    variant="elevated"
-                    style={styles.buildingItemCard}
-                  >
-                    <TouchableOpacity
-                      onPress={() =>
-                        navigation.navigate('BuildingDetails', { buildingId: building._id })
-                      }
-                      activeOpacity={0.7}
-                      style={styles.buildingItemTouch}
-                    >
-                      <View style={styles.buildingItemHeader}>
-                        <View style={styles.buildingNameCol}>
-                          <Text variant="heading" style={styles.buildingNameText}>
-                            {building.name}
+              <View style={styles.activityList}>
+                {recentActivities.slice(0, 5).map((act) => (
+                  <Card key={act.id} variant="flat" style={styles.activityItemCard}>
+                    <View style={styles.actRow}>
+                      <View style={styles.actIconBox}>{getActivityIcon(act.type)}</View>
+                      <View style={styles.actContent}>
+                        <View style={styles.actHeader}>
+                          <Text variant="body" style={styles.actTitle} numberOfLines={1}>
+                            {act.title}
                           </Text>
-                          <Text variant="caption" style={styles.buildingAddressText}>
-                            📍 {building.address}
+                          <Text variant="caption" style={styles.actTime}>
+                            {formatRelativeDateTime(act.timestamp)}
                           </Text>
                         </View>
-                        <View
-                          style={[
-                            styles.statusBadge,
-                            building.isActive ? styles.activeBadge : styles.inactiveBadge,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.statusBadgeText,
-                              building.isActive
-                                ? styles.activeBadgeText
-                                : styles.inactiveBadgeText,
-                            ]}
-                          >
-                            {building.isActive ? 'Active' : 'Inactive'}
+                        <Text variant="caption" style={styles.actDesc} numberOfLines={1}>
+                          {act.description}
+                        </Text>
+                        <View style={styles.actMeta}>
+                          <Text variant="caption" style={styles.actBuildingTag}>
+                            📍 {act.buildingName}
                           </Text>
                         </View>
                       </View>
-
-                      {(building.contactPhone || building.contactEmail) && (
-                        <View style={styles.contactRow}>
-                          {building.contactPhone ? (
-                            <Text variant="caption" style={styles.contactItem}>
-                              📞 {building.contactPhone}
-                            </Text>
-                          ) : null}
-                          {building.contactEmail ? (
-                            <Text variant="caption" style={styles.contactItem}>
-                              ✉️ {building.contactEmail}
-                            </Text>
-                          ) : null}
-                        </View>
-                      )}
-                    </TouchableOpacity>
+                    </View>
                   </Card>
                 ))}
               </View>
@@ -333,6 +397,17 @@ export const ProviderDashboardScreen: React.FC = () => {
           </>
         )}
       </ScrollView>
+
+      <ConfirmModal
+        visible={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={() => {
+          setShowLogoutModal(false);
+          logout();
+        }}
+        title="Sign Out of Provider Admin"
+        message="Are you sure you want to sign out? You will need to log back in to access the control center."
+      />
     </ScreenWrapper>
   );
 };
@@ -347,7 +422,7 @@ const styles = StyleSheet.create({
   },
   headerCard: {
     padding: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
   },
   headerTop: {
     flexDirection: 'row',
@@ -398,8 +473,40 @@ const styles = StyleSheet.create({
     padding: theme.spacing.xs,
     marginLeft: theme.spacing.sm,
   },
+  filterSection: {
+    marginBottom: theme.spacing.md,
+  },
+  filterLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: theme.colors.textSecondary,
+    marginBottom: 4,
+  },
+  pickerContainer: {
+    gap: theme.spacing.xs,
+  },
+  chip: {
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 6,
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1,
+    borderColor: theme.colors.surfaceBorder,
+  },
+  chipActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  chipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: theme.colors.textSecondary,
+  },
+  chipTextActive: {
+    color: '#FFFFFF',
+  },
   quickActionContainer: {
-    marginBottom: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
   },
   navSectionTitle: {
     color: theme.colors.textPrimary,
@@ -409,32 +516,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: theme.spacing.xs,
-    marginBottom: theme.spacing.md,
   },
   navCardBtn: {
     flex: 1,
     backgroundColor: theme.colors.surface,
-    paddingVertical: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
     paddingHorizontal: 2,
     borderRadius: theme.borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: theme.colors.surfaceBorder,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
   },
   navCardText: {
-    marginTop: theme.spacing.xs,
-    fontSize: 11,
+    marginTop: 4,
+    fontSize: 10,
     fontWeight: '600',
     color: theme.colors.textPrimary,
-  },
-  addBuildingButton: {
-    borderRadius: theme.borderRadius.md,
   },
   centerContainer: {
     alignItems: 'center',
@@ -462,33 +560,42 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.md,
     minWidth: 120,
   },
-  metricsRow: {
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: theme.spacing.lg,
+    alignItems: 'center',
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.sm,
+  },
+  sectionTitle: {
+    color: theme.colors.textPrimary,
+  },
+  viewAllText: {
+    fontSize: theme.typography.fontSizes.sm,
+    fontWeight: theme.typography.fontWeights.semibold,
+    color: theme.colors.primary,
+  },
+  metricsGrid: {
+    flexDirection: 'row',
     gap: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
   },
   metricCard: {
     flex: 1,
     padding: theme.spacing.md,
-    alignItems: 'flex-start',
     borderRadius: theme.borderRadius.md,
   },
-  totalCard: {
+  cardBlue: {
     backgroundColor: theme.colors.primaryLight,
   },
-  activeCard: {
+  cardGreen: {
     backgroundColor: theme.colors.successLight,
   },
-  inactiveCard: {
-    backgroundColor: theme.colors.surfaceHover,
-  },
-  metricIconRow: {
+  metricHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    width: '100%',
-    marginBottom: theme.spacing.xs,
+    marginBottom: 4,
   },
   metricNumber: {
     fontSize: theme.typography.fontSizes.xl,
@@ -500,96 +607,109 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  summaryBox: {
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.surface,
     marginBottom: theme.spacing.md,
   },
-  sectionTitle: {
-    color: theme.colors.textPrimary,
+  boxTitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: theme.colors.textMuted,
+    letterSpacing: 0.5,
+    marginBottom: theme.spacing.sm,
   },
-  viewAllText: {
-    fontSize: theme.typography.fontSizes.sm,
-    fontWeight: theme.typography.fontWeights.semibold,
-    color: theme.colors.primary,
+  summaryGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  summaryItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  summaryItemLabel: {
+    fontSize: 10,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+  },
+  summaryItemVal: {
+    fontSize: theme.typography.fontSizes.md,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    marginTop: 2,
+  },
+  verticalDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: theme.colors.surfaceBorder,
   },
   emptyCard: {
     alignItems: 'center',
-    padding: theme.spacing.xl,
+    padding: theme.spacing.lg,
     backgroundColor: theme.colors.surface,
   },
   emptyTitle: {
-    marginTop: theme.spacing.md,
+    marginTop: theme.spacing.sm,
     color: theme.colors.textPrimary,
   },
   emptySubtitle: {
     textAlign: 'center',
-    marginVertical: theme.spacing.xs,
-    color: theme.colors.textSecondary,
-  },
-  emptyAddBtn: {
-    marginTop: theme.spacing.md,
-  },
-  buildingsListContainer: {
-    gap: theme.spacing.md,
-  },
-  buildingItemCard: {
-    padding: 0,
-    overflow: 'hidden',
-  },
-  buildingItemTouch: {
-    padding: theme.spacing.md,
-  },
-  buildingItemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  buildingNameCol: {
-    flex: 1,
-    marginRight: theme.spacing.sm,
-  },
-  buildingNameText: {
-    fontWeight: '700',
-    color: theme.colors.textPrimary,
-  },
-  buildingAddressText: {
     marginTop: 2,
     color: theme.colors.textSecondary,
   },
-  statusBadge: {
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 3,
-    borderRadius: theme.borderRadius.sm,
+  activityList: {
+    gap: theme.spacing.xs,
   },
-  activeBadge: {
-    backgroundColor: theme.colors.successLight,
+  activityItemCard: {
+    padding: theme.spacing.sm,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.surfaceBorder,
   },
-  inactiveBadge: {
-    backgroundColor: '#E2E8F0',
-  },
-  statusBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  activeBadgeText: {
-    color: '#065F46',
-  },
-  inactiveBadgeText: {
-    color: '#475569',
-  },
-  contactRow: {
+  actRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: theme.spacing.sm,
-    paddingTop: theme.spacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.surfaceHover,
-    gap: theme.spacing.md,
+    alignItems: 'center',
+    gap: theme.spacing.sm,
   },
-  contactItem: {
-    color: theme.colors.textSecondary,
+  actIconBox: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: theme.colors.surfaceHover,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actContent: {
+    flex: 1,
+  },
+  actHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  actTitle: {
     fontSize: 12,
+    fontWeight: '700',
+    color: theme.colors.textPrimary,
+    flex: 1,
+  },
+  actTime: {
+    fontSize: 10,
+    color: theme.colors.textMuted,
+  },
+  actDesc: {
+    fontSize: 11,
+    color: theme.colors.textSecondary,
+    marginTop: 1,
+  },
+  actMeta: {
+    marginTop: 2,
+  },
+  actBuildingTag: {
+    fontSize: 10,
+    color: theme.colors.primary,
+    fontWeight: '600',
   },
 });

@@ -19,17 +19,25 @@ export type ProviderStackParamList = {
   AddCommitteeMember: undefined;
   EditCommitteeMember: { member: CommitteeMember };
   ProviderAttendance: undefined;
+  ProviderEntryExit: undefined;
+  ProviderSecurityActivity: { buildingId?: string } | undefined;
 };
 
 export type GuardStackParamList = {
   GuardHome: undefined;
   GuardAttendance: undefined;
   GuardShift: undefined;
+  GuardEntryExit: undefined;
+  AddEntryLog: undefined;
+  EntryLogHistory: undefined;
+  EntryLogDetails: { entryLogId: string };
 };
 
 export type CommitteeStackParamList = {
   CommitteeHome: undefined;
   CommitteeAttendance: undefined;
+  CommitteeEntryExit: undefined;
+  CommitteeSecurityActivity: undefined;
 };
 
 export type RootStackParamList = {
@@ -65,7 +73,17 @@ export type GuardNavigationProp<T extends keyof GuardStackParamList> = NativeSta
   T
 >;
 
+export type GuardScreenRouteProp<T extends keyof GuardStackParamList> = RouteProp<
+  GuardStackParamList,
+  T
+>;
+
 export type CommitteeNavigationProp<T extends keyof CommitteeStackParamList> = NativeStackNavigationProp<
+  CommitteeStackParamList,
+  T
+>;
+
+export type CommitteeScreenRouteProp<T extends keyof CommitteeStackParamList> = RouteProp<
   CommitteeStackParamList,
   T
 >;
