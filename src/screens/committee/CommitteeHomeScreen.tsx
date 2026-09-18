@@ -18,6 +18,7 @@ import { theme } from '../../theme';
 import { CommitteeMember } from '../../types/committee';
 import { getMyCommitteeProfile } from '../../services/committeeService';
 import { getDashboard } from '../../services/dashboardService';
+import { getUnreadCount } from '../../services/notificationService';
 import { CommitteeDashboardData, ActivityItem } from '../../types/dashboard';
 import { formatRelativeDateTime } from '../../utils/dateFormatter';
 import { CommitteeStackParamList } from '../../types/navigation';
@@ -32,6 +33,7 @@ export const CommitteeHomeScreen: React.FC = () => {
 
   const [profile, setProfile] = useState<CommitteeMember | null>(null);
   const [dashboardData, setDashboardData] = useState<CommitteeDashboardData | null>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -46,12 +48,14 @@ export const CommitteeHomeScreen: React.FC = () => {
     setErrorMessage(null);
 
     try {
-      const [profData, dashData] = await Promise.all([
+      const [profData, dashData, uCount] = await Promise.all([
         getMyCommitteeProfile().catch(() => null),
         getDashboard(),
+        getUnreadCount().catch(() => 0),
       ]);
       setProfile(profData);
       setDashboardData(dashData as CommitteeDashboardData);
+      setUnreadCount(uCount);
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to load building operational summary.');
     } finally {
@@ -118,6 +122,21 @@ export const CommitteeHomeScreen: React.FC = () => {
             </TouchableOpacity>
 
             <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={styles.actionIconBtn}
+                onPress={() => navigation.navigate('Notifications')}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="notifications-outline" size={24} color={theme.colors.committee} />
+                {unreadCount > 0 && (
+                  <View style={styles.bellBadge}>
+                    <Text style={styles.bellBadgeText}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.actionIconBtn}
                 onPress={() => navigation.navigate('Profile')}
@@ -283,6 +302,25 @@ export const CommitteeHomeScreen: React.FC = () => {
 
             <TouchableOpacity
               style={styles.moduleCard}
+              onPress={() => navigation.navigate('Notifications')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.moduleHeader}>
+                <Ionicons name="notifications-outline" size={24} color={theme.colors.committee} />
+                <View style={styles.activeBadge}>
+                  <Text style={styles.activeBadgeText}>ACTIVE</Text>
+                </View>
+              </View>
+              <Text variant="heading" style={styles.moduleTitle}>
+                Notifications & Alerts
+              </Text>
+              <Text variant="caption" style={styles.moduleSubtitle}>
+                Building security notifications & updates
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.moduleCard}
               onPress={() => navigation.navigate('Profile')}
               activeOpacity={0.7}
             >
@@ -428,6 +466,24 @@ const styles = StyleSheet.create({
   },
   actionIconBtn: {
     padding: theme.spacing.xs,
+    position: 'relative',
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: theme.colors.danger,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  bellBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '700',
   },
   logoutBtn: {
     padding: theme.spacing.xs,

@@ -18,9 +18,12 @@ import { theme } from '../../theme';
 import { Guard } from '../../types/guard';
 import { getMyGuardProfile } from '../../services/guardService';
 import { getGuardDashboard } from '../../services/dashboardService';
+import { getUnreadCount } from '../../services/notificationService';
 import { GuardStackParamList } from '../../types/navigation';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
 
 type NavigationProp = NativeStackNavigationProp<GuardStackParamList, 'GuardHome'>;
 
@@ -29,28 +32,34 @@ export const GuardHomeScreen: React.FC = () => {
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState<Guard | null>(null);
   const [dutyStatus, setDutyStatus] = useState<any | null>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
 
-  useEffect(() => {
-    async function loadGuardProfile() {
-      try {
-        const [profData, dashData] = await Promise.all([
-          getMyGuardProfile().catch(() => null),
-          getGuardDashboard().catch(() => null),
-        ]);
-        setProfile(profData);
-        if (dashData?.todayStatus) {
-          setDutyStatus(dashData.todayStatus);
-        }
-      } catch (err: any) {
-        // Fallback gracefully
-      } finally {
-        setIsLoading(false);
+  const loadGuardProfile = async () => {
+    try {
+      const [profData, dashData, uCount] = await Promise.all([
+        getMyGuardProfile().catch(() => null),
+        getGuardDashboard().catch(() => null),
+        getUnreadCount().catch(() => 0),
+      ]);
+      setProfile(profData);
+      setUnreadCount(uCount);
+      if (dashData?.todayStatus) {
+        setDutyStatus(dashData.todayStatus);
       }
+    } catch (err: any) {
+      // Fallback gracefully
+    } finally {
+      setIsLoading(false);
     }
-    loadGuardProfile();
-  }, []);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadGuardProfile();
+    }, [])
+  );
 
   const getBuildingName = () => {
     if (profile && typeof profile.buildingId === 'object' && profile.buildingId) {
@@ -98,6 +107,21 @@ export const GuardHomeScreen: React.FC = () => {
             </TouchableOpacity>
 
             <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={styles.actionIconBtn}
+                onPress={() => navigation.navigate('Notifications')}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="notifications-outline" size={24} color={theme.colors.primary} />
+                {unreadCount > 0 && (
+                  <View style={styles.bellBadge}>
+                    <Text style={styles.bellBadgeText}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.actionIconBtn}
                 onPress={() => navigation.navigate('Profile')}
@@ -240,6 +264,25 @@ export const GuardHomeScreen: React.FC = () => {
 
             <TouchableOpacity
               style={styles.moduleCard}
+              onPress={() => navigation.navigate('Notifications')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.moduleHeader}>
+                <Ionicons name="notifications-outline" size={26} color={theme.colors.primary} />
+                <View style={styles.activeBadge}>
+                  <Text style={styles.activeBadgeText}>ACTIVE</Text>
+                </View>
+              </View>
+              <Text variant="heading" style={styles.moduleTitle}>
+                Notifications & Alerts
+              </Text>
+              <Text variant="caption" style={styles.moduleSubtitle}>
+                Duty alerts & security notifications
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.moduleCard}
               onPress={() => navigation.navigate('Profile')}
               activeOpacity={0.7}
             >
@@ -340,6 +383,24 @@ const styles = StyleSheet.create({
   },
   actionIconBtn: {
     padding: theme.spacing.xs,
+    position: 'relative',
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: theme.colors.danger,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  bellBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '700',
   },
   logoutBtn: {
     padding: theme.spacing.xs,

@@ -19,6 +19,7 @@ import { theme } from '../../theme';
 import { Building } from '../../types/building';
 import { getBuildings } from '../../services/buildingService';
 import { getDashboard } from '../../services/dashboardService';
+import { getUnreadCount } from '../../services/notificationService';
 import { ProviderDashboardData, ActivityItem } from '../../types/dashboard';
 import { formatRelativeDateTime } from '../../utils/dateFormatter';
 import { ProviderStackParamList } from '../../types/navigation';
@@ -34,6 +35,7 @@ export const ProviderDashboardScreen: React.FC = () => {
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | undefined>(undefined);
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [dashboardData, setDashboardData] = useState<ProviderDashboardData | null>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -48,12 +50,14 @@ export const ProviderDashboardScreen: React.FC = () => {
     setErrorMessage(null);
 
     try {
-      const [bList, dash] = await Promise.all([
+      const [bList, dash, uCount] = await Promise.all([
         getBuildings(),
         getDashboard(selectedBuildingId),
+        getUnreadCount().catch(() => 0),
       ]);
       setBuildings(bList);
       setDashboardData(dash as ProviderDashboardData);
+      setUnreadCount(uCount);
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to load operational dashboard data.');
     } finally {
@@ -128,6 +132,21 @@ export const ProviderDashboardScreen: React.FC = () => {
             </TouchableOpacity>
 
             <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={styles.actionIconBtn}
+                onPress={() => navigation.navigate('Notifications')}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="notifications-outline" size={24} color={theme.colors.primary} />
+                {unreadCount > 0 && (
+                  <View style={styles.bellBadge}>
+                    <Text style={styles.bellBadgeText}>
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.actionIconBtn}
                 onPress={() => navigation.navigate('Profile')}
@@ -237,6 +256,17 @@ export const ProviderDashboardScreen: React.FC = () => {
               <Ionicons name="walk" size={20} color={theme.colors.warning} />
               <Text variant="body" style={styles.navCardText} numberOfLines={1}>
                 Entry Logs
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.navCardBtn}
+              onPress={() => navigation.navigate('Notifications')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="notifications" size={20} color={theme.colors.info} />
+              <Text variant="body" style={styles.navCardText} numberOfLines={1}>
+                Alerts
               </Text>
             </TouchableOpacity>
 
@@ -501,6 +531,24 @@ const styles = StyleSheet.create({
   },
   actionIconBtn: {
     padding: theme.spacing.xs,
+    position: 'relative',
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: theme.colors.danger,
+    borderRadius: 8,
+    minWidth: 16,
+    height: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  bellBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '700',
   },
   logoutBtn: {
     padding: theme.spacing.xs,

@@ -8,6 +8,7 @@ import { CommitteeSecurityActivityScreen } from '../screens/committee/CommitteeS
 import { ProfileScreen } from '../screens/common/ProfileScreen';
 import { EditProfileScreen } from '../screens/common/EditProfileScreen';
 import { ChangePasswordScreen } from '../screens/common/ChangePasswordScreen';
+import { NotificationsScreen } from '../screens/common/NotificationsScreen';
 import { theme } from '../theme';
 
 const Stack = createNativeStackNavigator<CommitteeStackParamList>();
@@ -49,6 +50,11 @@ export const CommitteeNavigator: React.FC = () => {
         name="CommitteeSecurityActivity"
         component={CommitteeSecurityActivityScreen}
         options={{ title: 'Building Security Activity Log' }}
+      />
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{ title: 'Notifications Center' }}
       />
       <Stack.Screen
         name="Profile"

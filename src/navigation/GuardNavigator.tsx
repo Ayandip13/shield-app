@@ -11,6 +11,7 @@ import { EntryLogDetailsScreen } from '../screens/guard/EntryLogDetailsScreen';
 import { ProfileScreen } from '../screens/common/ProfileScreen';
 import { EditProfileScreen } from '../screens/common/EditProfileScreen';
 import { ChangePasswordScreen } from '../screens/common/ChangePasswordScreen';
+import { NotificationsScreen } from '../screens/common/NotificationsScreen';
 import { theme } from '../theme';
 
 const Stack = createNativeStackNavigator<GuardStackParamList>();
@@ -67,6 +68,11 @@ export const GuardNavigator: React.FC = () => {
         name="EntryLogDetails"
         component={EntryLogDetailsScreen}
         options={{ title: 'Entry Log Details' }}
+      />
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{ title: 'Notifications Center' }}
       />
       <Stack.Screen
         name="Profile"

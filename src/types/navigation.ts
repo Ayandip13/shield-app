@@ -21,6 +21,7 @@ export type ProviderStackParamList = {
   ProviderAttendance: undefined;
   ProviderEntryExit: undefined;
   ProviderSecurityActivity: { buildingId?: string } | undefined;
+  Notifications: undefined;
   Profile: undefined;
   EditProfile: undefined;
   ChangePassword: undefined;
@@ -34,6 +35,7 @@ export type GuardStackParamList = {
   AddEntryLog: undefined;
   EntryLogHistory: undefined;
   EntryLogDetails: { entryLogId: string };
+  Notifications: undefined;
   Profile: undefined;
   EditProfile: undefined;
   ChangePassword: undefined;
@@ -44,6 +46,7 @@ export type CommitteeStackParamList = {
   CommitteeAttendance: undefined;
   CommitteeEntryExit: undefined;
   CommitteeSecurityActivity: undefined;
+  Notifications: undefined;
   Profile: undefined;
   EditProfile: undefined;
   ChangePassword: undefined;

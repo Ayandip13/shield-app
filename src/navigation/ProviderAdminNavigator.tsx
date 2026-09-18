@@ -20,6 +20,7 @@ import { ProviderSecurityActivityScreen } from '../screens/provider/ProviderSecu
 import { ProfileScreen } from '../screens/common/ProfileScreen';
 import { EditProfileScreen } from '../screens/common/EditProfileScreen';
 import { ChangePasswordScreen } from '../screens/common/ChangePasswordScreen';
+import { NotificationsScreen } from '../screens/common/NotificationsScreen';
 import { theme } from '../theme';
 
 const Stack = createNativeStackNavigator<ProviderStackParamList>();
@@ -121,6 +122,11 @@ export const ProviderAdminNavigator: React.FC = () => {
         name="ProviderSecurityActivity"
         component={ProviderSecurityActivityScreen}
         options={{ title: 'Security Activity Log' }}
+      />
+      <Stack.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{ title: 'Notifications Center' }}
       />
       <Stack.Screen
         name="Profile"
