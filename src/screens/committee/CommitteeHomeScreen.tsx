@@ -99,7 +99,11 @@ export const CommitteeHomeScreen: React.FC = () => {
         {/* Profile Card Header */}
         <Card variant="elevated" style={styles.card}>
           <View style={styles.headerTop}>
-            <View style={styles.userInfoRow}>
+            <TouchableOpacity
+              style={styles.userInfoRow}
+              onPress={() => navigation.navigate('Profile')}
+              activeOpacity={0.8}
+            >
               <View style={styles.avatarContainer}>
                 <Ionicons name="people" size={24} color="#FFFFFF" />
               </View>
@@ -111,16 +115,26 @@ export const CommitteeHomeScreen: React.FC = () => {
                   <Text style={styles.roleBadgeText}>BUILDING COMMITTEE PORTAL</Text>
                 </View>
               </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.logoutBtn}
-              onPress={() => setShowLogoutModal(true)}
-              activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons name="log-out-outline" size={22} color={theme.colors.danger} />
             </TouchableOpacity>
+
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={styles.actionIconBtn}
+                onPress={() => navigation.navigate('Profile')}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="person-circle-outline" size={26} color={theme.colors.committee} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionIconBtn}
+                onPress={() => setShowLogoutModal(true)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="log-out-outline" size={24} color={theme.colors.danger} />
+              </TouchableOpacity>
+            </View>
           </View>
         </Card>
 
@@ -266,6 +280,25 @@ export const CommitteeHomeScreen: React.FC = () => {
                 Chronological security feed
               </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.moduleCard}
+              onPress={() => navigation.navigate('Profile')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.moduleHeader}>
+                <Ionicons name="person-outline" size={24} color={theme.colors.committee} />
+                <View style={styles.activeBadge}>
+                  <Text style={styles.activeBadgeText}>ACTIVE</Text>
+                </View>
+              </View>
+              <Text variant="heading" style={styles.moduleTitle}>
+                My Profile
+              </Text>
+              <Text variant="caption" style={styles.moduleSubtitle}>
+                Personal details & account password
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -387,6 +420,14 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: '#065F46',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+  },
+  actionIconBtn: {
+    padding: theme.spacing.xs,
   },
   logoutBtn: {
     padding: theme.spacing.xs,

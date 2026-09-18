@@ -17,6 +17,9 @@ import { EditCommitteeMemberScreen } from '../screens/provider/EditCommitteeMemb
 import { ProviderAttendanceScreen } from '../screens/provider/ProviderAttendanceScreen';
 import { ProviderEntryExitScreen } from '../screens/provider/ProviderEntryExitScreen';
 import { ProviderSecurityActivityScreen } from '../screens/provider/ProviderSecurityActivityScreen';
+import { ProfileScreen } from '../screens/common/ProfileScreen';
+import { EditProfileScreen } from '../screens/common/EditProfileScreen';
+import { ChangePasswordScreen } from '../screens/common/ChangePasswordScreen';
 import { theme } from '../theme';
 
 const Stack = createNativeStackNavigator<ProviderStackParamList>();
@@ -118,6 +121,21 @@ export const ProviderAdminNavigator: React.FC = () => {
         name="ProviderSecurityActivity"
         component={ProviderSecurityActivityScreen}
         options={{ title: 'Security Activity Log' }}
+      />
+      <Stack.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ title: 'My Account Profile' }}
+      />
+      <Stack.Screen
+        name="EditProfile"
+        component={EditProfileScreen}
+        options={{ title: 'Edit Profile' }}
+      />
+      <Stack.Screen
+        name="ChangePassword"
+        component={ChangePasswordScreen}
+        options={{ title: 'Change Password' }}
       />
     </Stack.Navigator>
   );

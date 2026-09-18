@@ -8,6 +8,9 @@ import { GuardEntryExitScreen } from '../screens/guard/GuardEntryExitScreen';
 import { AddEntryLogScreen } from '../screens/guard/AddEntryLogScreen';
 import { EntryLogHistoryScreen } from '../screens/guard/EntryLogHistoryScreen';
 import { EntryLogDetailsScreen } from '../screens/guard/EntryLogDetailsScreen';
+import { ProfileScreen } from '../screens/common/ProfileScreen';
+import { EditProfileScreen } from '../screens/common/EditProfileScreen';
+import { ChangePasswordScreen } from '../screens/common/ChangePasswordScreen';
 import { theme } from '../theme';
 
 const Stack = createNativeStackNavigator<GuardStackParamList>();
@@ -64,6 +67,21 @@ export const GuardNavigator: React.FC = () => {
         name="EntryLogDetails"
         component={EntryLogDetailsScreen}
         options={{ title: 'Entry Log Details' }}
+      />
+      <Stack.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ title: 'My Account Profile' }}
+      />
+      <Stack.Screen
+        name="EditProfile"
+        component={EditProfileScreen}
+        options={{ title: 'Edit Profile' }}
+      />
+      <Stack.Screen
+        name="ChangePassword"
+        component={ChangePasswordScreen}
+        options={{ title: 'Change Password' }}
       />
     </Stack.Navigator>
   );

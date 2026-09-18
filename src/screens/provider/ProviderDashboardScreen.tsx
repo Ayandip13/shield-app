@@ -109,7 +109,11 @@ export const ProviderDashboardScreen: React.FC = () => {
         {/* Profile / Header Area */}
         <Card variant="elevated" style={styles.headerCard}>
           <View style={styles.headerTop}>
-            <View style={styles.userInfoRow}>
+            <TouchableOpacity
+              style={styles.userInfoRow}
+              onPress={() => navigation.navigate('Profile')}
+              activeOpacity={0.8}
+            >
               <View style={styles.avatarContainer}>
                 <Text style={styles.avatarText}>{getInitials(user?.name)}</Text>
               </View>
@@ -121,16 +125,26 @@ export const ProviderDashboardScreen: React.FC = () => {
                   <Text style={styles.roleBadgeText}>PROVIDER CONTROL CENTER</Text>
                 </View>
               </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.logoutBtn}
-              onPress={() => setShowLogoutModal(true)}
-              activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons name="log-out-outline" size={22} color={theme.colors.danger} />
             </TouchableOpacity>
+
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={styles.actionIconBtn}
+                onPress={() => navigation.navigate('Profile')}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="person-circle-outline" size={26} color={theme.colors.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionIconBtn}
+                onPress={() => setShowLogoutModal(true)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Ionicons name="log-out-outline" size={24} color={theme.colors.danger} />
+              </TouchableOpacity>
+            </View>
           </View>
         </Card>
 
@@ -223,6 +237,17 @@ export const ProviderDashboardScreen: React.FC = () => {
               <Ionicons name="walk" size={20} color={theme.colors.warning} />
               <Text variant="body" style={styles.navCardText} numberOfLines={1}>
                 Entry Logs
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.navCardBtn}
+              onPress={() => navigation.navigate('Profile')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="person" size={20} color={theme.colors.primary} />
+              <Text variant="body" style={styles.navCardText} numberOfLines={1}>
+                My Profile
               </Text>
             </TouchableOpacity>
           </View>
@@ -469,6 +494,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: theme.colors.primaryDark,
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.xs,
+  },
+  actionIconBtn: {
+    padding: theme.spacing.xs,
+  },
   logoutBtn: {
     padding: theme.spacing.xs,
     marginLeft: theme.spacing.sm,
@@ -514,11 +547,11 @@ const styles = StyleSheet.create({
   },
   navButtonsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
     gap: theme.spacing.xs,
   },
   navCardBtn: {
-    flex: 1,
+    width: '31%',
     backgroundColor: theme.colors.surface,
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: 2,

@@ -5,6 +5,9 @@ import { CommitteeHomeScreen } from '../screens/committee/CommitteeHomeScreen';
 import { CommitteeAttendanceScreen } from '../screens/committee/CommitteeAttendanceScreen';
 import { CommitteeEntryExitScreen } from '../screens/committee/CommitteeEntryExitScreen';
 import { CommitteeSecurityActivityScreen } from '../screens/committee/CommitteeSecurityActivityScreen';
+import { ProfileScreen } from '../screens/common/ProfileScreen';
+import { EditProfileScreen } from '../screens/common/EditProfileScreen';
+import { ChangePasswordScreen } from '../screens/common/ChangePasswordScreen';
 import { theme } from '../theme';
 
 const Stack = createNativeStackNavigator<CommitteeStackParamList>();
@@ -46,6 +49,21 @@ export const CommitteeNavigator: React.FC = () => {
         name="CommitteeSecurityActivity"
         component={CommitteeSecurityActivityScreen}
         options={{ title: 'Building Security Activity Log' }}
+      />
+      <Stack.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ title: 'My Account Profile' }}
+      />
+      <Stack.Screen
+        name="EditProfile"
+        component={EditProfileScreen}
+        options={{ title: 'Edit Profile' }}
+      />
+      <Stack.Screen
+        name="ChangePassword"
+        component={ChangePasswordScreen}
+        options={{ title: 'Change Password' }}
       />
     </Stack.Navigator>
   );
