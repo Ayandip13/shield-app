@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Alert,
   TouchableOpacity,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -12,36 +11,35 @@ import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
+import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { theme } from '../../theme';
 import { changePassword } from '../../services/profileService';
 import { Ionicons } from '@expo/vector-icons';
 
 export const ChangePasswordScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const { showSuccess, showError, showWarning } = useToast();
 
   const [currentPassword, setCurrentPassword] = useState<string>('');
   const [newPassword, setNewPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
 
-  const [showCurrentPw, setShowCurrentPw] = useState<boolean>(false);
-  const [showNewPw, setShowNewPw] = useState<boolean>(false);
-  const [showConfirmPw, setShowConfirmPw] = useState<boolean>(false);
-
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Validation Error', 'All password fields are required.');
+      showWarning('Validation Error', 'All password fields are required.');
       return;
     }
 
     if (newPassword.length < 8) {
-      Alert.alert('Validation Error', 'New password must be at least 8 characters long.');
+      showWarning('Validation Error', 'New password must be at least 8 characters long.');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert('Validation Error', 'New password and confirmation password do not match.');
+      showWarning('Validation Error', 'New password and confirmation password do not match.');
       return;
     }
 
@@ -52,14 +50,10 @@ export const ChangePasswordScreen: React.FC = () => {
         newPassword,
       });
 
-      Alert.alert('Success', res.message || 'Your account password has been changed successfully.', [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]);
+      showSuccess('Success', res.message || 'Your account password has been changed successfully.');
+      navigation.goBack();
     } catch (err: any) {
-      Alert.alert(
+      showError(
         'Password Change Error',
         err.message || 'Failed to update password. Please check your current password.'
       );
@@ -89,70 +83,31 @@ export const ChangePasswordScreen: React.FC = () => {
           <View style={styles.divider} />
 
           {/* Current Password Field */}
-          <View style={styles.inputWrapper}>
-            <Input
-              label="Current Password *"
-              placeholder="Enter current password"
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              secureTextEntry={!showCurrentPw}
-            />
-            <TouchableOpacity
-              style={styles.eyeBtn}
-              onPress={() => setShowCurrentPw(!showCurrentPw)}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={showCurrentPw ? 'eye-off-outline' : 'eye-outline'}
-                size={20}
-                color={theme.colors.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
+          <Input
+            label="Current Password *"
+            placeholder="Enter current password"
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+            secureTextEntry
+          />
 
           {/* New Password Field */}
-          <View style={styles.inputWrapper}>
-            <Input
-              label="New Password *"
-              placeholder="Enter at least 8 characters"
-              value={newPassword}
-              onChangeText={setNewPassword}
-              secureTextEntry={!showNewPw}
-            />
-            <TouchableOpacity
-              style={styles.eyeBtn}
-              onPress={() => setShowNewPw(!showNewPw)}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={showNewPw ? 'eye-off-outline' : 'eye-outline'}
-                size={20}
-                color={theme.colors.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
+          <Input
+            label="New Password *"
+            placeholder="Enter at least 8 characters"
+            value={newPassword}
+            onChangeText={setNewPassword}
+            secureTextEntry
+          />
 
           {/* Confirm Password Field */}
-          <View style={styles.inputWrapper}>
-            <Input
-              label="Confirm New Password *"
-              placeholder="Re-enter new password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry={!showConfirmPw}
-            />
-            <TouchableOpacity
-              style={styles.eyeBtn}
-              onPress={() => setShowConfirmPw(!showConfirmPw)}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={showConfirmPw ? 'eye-off-outline' : 'eye-outline'}
-                size={20}
-                color={theme.colors.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
+          <Input
+            label="Confirm New Password *"
+            placeholder="Re-enter new password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+          />
 
           <Button
             title={isSubmitting ? 'Updating Password...' : 'Update Password'}
@@ -214,16 +169,6 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: theme.colors.surfaceBorder,
     marginVertical: theme.spacing.md,
-  },
-  inputWrapper: {
-    position: 'relative',
-  },
-  eyeBtn: {
-    position: 'absolute',
-    right: 12,
-    top: 38,
-    padding: 4,
-    zIndex: 10,
   },
   saveBtn: {
     marginTop: theme.spacing.md,

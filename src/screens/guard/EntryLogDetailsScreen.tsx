@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { RouteProp } from '@react-navigation/native';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
@@ -7,6 +7,7 @@ import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { theme } from '../../theme';
 import { EntryLog } from '../../types/entryLog';
 import { getEntryLogById, markEntryLogExit } from '../../services/entryLogService';
@@ -19,6 +20,7 @@ export const EntryLogDetailsScreen: React.FC = () => {
   const route = useRoute<DetailsRouteProp>();
   const navigation = useNavigation();
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const { entryLogId } = route.params;
 
   const [log, setLog] = useState<EntryLog | null>(null);
@@ -44,31 +46,19 @@ export const EntryLogDetailsScreen: React.FC = () => {
     fetchLogDetails();
   }, [entryLogId]);
 
-  const handleMarkExit = () => {
+  const handleMarkExit = async () => {
     if (!log) return;
 
-    Alert.alert(
-      'Confirm Exit',
-      `Mark "${log.personName}" as exited from building?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Mark Exit',
-          onPress: async () => {
-            setIsProcessing(true);
-            try {
-              const updated = await markEntryLogExit(log._id);
-              setLog(updated);
-              Alert.alert('Exit Recorded', `${log.personName} has been marked as exited.`);
-            } catch (err: any) {
-              Alert.alert('Action Failed', err.message || 'Unable to mark exit.');
-            } finally {
-              setIsProcessing(false);
-            }
-          },
-        },
-      ]
-    );
+    setIsProcessing(true);
+    try {
+      const updated = await markEntryLogExit(log._id);
+      setLog(updated);
+      showSuccess('Exit Recorded', `${log.personName} has been marked as exited.`);
+    } catch (err: any) {
+      showError('Action Failed', err.message || 'Unable to mark exit.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const formatDateTime = (isoString?: string | null) => {

@@ -7,13 +7,13 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
 import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { theme } from '../../theme';
+import { useToast } from '../../context/ToastContext';
 import { AttendanceRecord, TodayAttendanceStatusResponse } from '../../types/attendance';
 import {
   getGuardTodayAttendance,
@@ -24,6 +24,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 export const GuardAttendanceScreen: React.FC = () => {
+  const { showSuccess, showError } = useToast();
   const [todayData, setTodayData] = useState<TodayAttendanceStatusResponse | null>(null);
   const [history, setHistory] = useState<AttendanceRecord[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -59,53 +60,29 @@ export const GuardAttendanceScreen: React.FC = () => {
   }, []);
 
   const handleCheckIn = async () => {
-    Alert.alert(
-      'Confirm Duty Check-In',
-      'Are you ready to check in for your active duty shift?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Check In Now',
-          onPress: async () => {
-            setIsActionLoading(true);
-            try {
-              await checkInGuard();
-              Alert.alert('Check-In Successful', 'Your duty session has been registered.');
-              await loadAttendanceData();
-            } catch (err: any) {
-              Alert.alert('Check-In Failed', err.message || 'Unable to complete check-in.');
-            } finally {
-              setIsActionLoading(false);
-            }
-          },
-        },
-      ]
-    );
+    setIsActionLoading(true);
+    try {
+      await checkInGuard();
+      showSuccess('Check-In Successful', 'Your duty session has been registered.');
+      await loadAttendanceData();
+    } catch (err: any) {
+      showError('Check-In Failed', err.message || 'Unable to complete check-in.');
+    } finally {
+      setIsActionLoading(false);
+    }
   };
 
   const handleCheckOut = async () => {
-    Alert.alert(
-      'Confirm Duty Check-Out',
-      'Are you sure you want to end your duty shift and check out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Check Out Now',
-          onPress: async () => {
-            setIsActionLoading(true);
-            try {
-              await checkOutGuard('Shift completed');
-              Alert.alert('Check-Out Successful', 'Your duty session has ended.');
-              await loadAttendanceData();
-            } catch (err: any) {
-              Alert.alert('Check-Out Failed', err.message || 'Unable to complete check-out.');
-            } finally {
-              setIsActionLoading(false);
-            }
-          },
-        },
-      ]
-    );
+    setIsActionLoading(true);
+    try {
+      await checkOutGuard('Shift completed');
+      showSuccess('Check-Out Successful', 'Your duty session has ended.');
+      await loadAttendanceData();
+    } catch (err: any) {
+      showError('Check-Out Failed', err.message || 'Unable to complete check-out.');
+    } finally {
+      setIsActionLoading(false);
+    }
   };
 
   const formatTime = (timeStr?: string | null) => {

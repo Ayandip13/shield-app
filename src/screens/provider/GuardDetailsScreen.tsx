@@ -15,6 +15,7 @@ import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { theme } from '../../theme';
+import { useToast } from '../../context/ToastContext';
 import { Guard } from '../../types/guard';
 import { getGuard, updateGuardStatus } from '../../services/guardService';
 import { ProviderStackParamList } from '../../types/navigation';
@@ -26,6 +27,7 @@ type DetailsNavProp = NativeStackNavigationProp<ProviderStackParamList, 'GuardDe
 export const GuardDetailsScreen: React.FC = () => {
   const route = useRoute<DetailsRouteProp>();
   const navigation = useNavigation<DetailsNavProp>();
+  const { showSuccess, showError } = useToast();
   const { guardId } = route.params;
 
   const [guard, setGuard] = useState<Guard | null>(null);
@@ -80,8 +82,9 @@ export const GuardDetailsScreen: React.FC = () => {
             try {
               const updated = await updateGuardStatus(guard._id, newStatus);
               setGuard(updated);
+              showSuccess('Guard Updated', `Guard account has been ${newStatus ? 'activated' : 'deactivated'}.`);
             } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to update guard status.');
+              showError('Update Failed', err.message || 'Failed to update guard status.');
             } finally {
               setIsTogglingStatus(false);
             }

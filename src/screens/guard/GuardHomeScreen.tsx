@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -14,6 +13,7 @@ import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { theme } from '../../theme';
 import { Guard } from '../../types/guard';
 import { getMyGuardProfile } from '../../services/guardService';
@@ -30,6 +30,7 @@ type NavigationProp = NativeStackNavigationProp<GuardStackParamList, 'GuardHome'
 export const GuardHomeScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user, logout } = useAuth();
+  const { showInfo } = useToast();
   const [profile, setProfile] = useState<Guard | null>(null);
   const [dutyStatus, setDutyStatus] = useState<any | null>(null);
   const [unreadCount, setUnreadCount] = useState<number>(0);
@@ -76,7 +77,7 @@ export const GuardHomeScreen: React.FC = () => {
   };
 
   const handlePlaceholderPress = (featureName: string) => {
-    Alert.alert(
+    showInfo(
       `${featureName} (Coming Soon)`,
       `The ${featureName} module is part of a future system update.`
     );
@@ -111,9 +112,9 @@ export const GuardHomeScreen: React.FC = () => {
                 style={styles.actionIconBtn}
                 onPress={() => navigation.navigate('Notifications')}
                 activeOpacity={0.7}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
-                <Ionicons name="notifications-outline" size={24} color={theme.colors.primary} />
+                <Ionicons name="notifications-outline" size={20} color={theme.colors.primary} />
                 {unreadCount > 0 && (
                   <View style={styles.bellBadge}>
                     <Text style={styles.bellBadgeText}>
@@ -124,19 +125,11 @@ export const GuardHomeScreen: React.FC = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.actionIconBtn}
-                onPress={() => navigation.navigate('Profile')}
-                activeOpacity={0.7}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="person-circle-outline" size={26} color={theme.colors.primary} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.actionIconBtn}
                 onPress={() => setShowLogoutModal(true)}
                 activeOpacity={0.7}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
-                <Ionicons name="log-out-outline" size={24} color={theme.colors.danger} />
+                <Ionicons name="log-out-outline" size={20} color={theme.colors.danger} />
               </TouchableOpacity>
             </View>
           </View>
@@ -377,30 +370,43 @@ const styles = StyleSheet.create({
     color: '#D97706',
   },
   headerActions: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
-    gap: theme.spacing.xs,
+    justifyContent: 'center',
+    gap: 8,
+    paddingLeft: theme.spacing.sm,
+    borderLeftWidth: 1,
+    borderLeftColor: theme.colors.surfaceBorder,
   },
   actionIconBtn: {
-    padding: theme.spacing.xs,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.surfaceHover,
+    alignItems: 'center',
+    justifyContent: 'center',
     position: 'relative',
   },
   bellBadge: {
     position: 'absolute',
-    top: 2,
-    right: 2,
+    top: -2,
+    right: -2,
     backgroundColor: theme.colors.danger,
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
   },
   bellBadgeText: {
     color: '#FFFFFF',
     fontSize: 9,
     fontWeight: '700',
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   logoutBtn: {
     padding: theme.spacing.xs,

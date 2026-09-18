@@ -6,21 +6,25 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
 import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { theme } from '../../theme';
+import { useToast } from '../../context/ToastContext';
 import { EntryLog } from '../../types/entryLog';
 import { getActiveEntryLogs, markEntryLogExit } from '../../services/entryLogService';
-import { GuardNavigationProp } from '../../types/navigation';
+import { GuardStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 
+type NavigationProp = NativeStackNavigationProp<GuardStackParamList, 'GuardEntryExit'>;
+
 export const GuardEntryExitScreen: React.FC = () => {
-  const navigation = useNavigation<GuardNavigationProp<'GuardEntryExit'>>();
+  const navigation = useNavigation<NavigationProp>();
+  const { showSuccess, showError } = useToast();
 
   const [activeEntries, setActiveEntries] = useState<EntryLog[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -53,29 +57,17 @@ export const GuardEntryExitScreen: React.FC = () => {
     }, [])
   );
 
-  const handleMarkExit = (entry: EntryLog) => {
-    Alert.alert(
-      'Confirm Exit',
-      `Mark "${entry.personName}" as exited from building?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Mark Exit',
-          onPress: async () => {
-            setActionId(entry._id);
-            try {
-              await markEntryLogExit(entry._id);
-              Alert.alert('Exit Recorded', `${entry.personName} has been marked as exited.`);
-              await fetchActiveEntries();
-            } catch (err: any) {
-              Alert.alert('Action Failed', err.message || 'Unable to record exit.');
-            } finally {
-              setActionId(null);
-            }
-          },
-        },
-      ]
-    );
+  const handleMarkExit = async (entry: EntryLog) => {
+    setActionId(entry._id);
+    try {
+      await markEntryLogExit(entry._id);
+      showSuccess('Exit Recorded', `${entry.personName} has been marked as exited.`);
+      await fetchActiveEntries();
+    } catch (err: any) {
+      showError('Action Failed', err.message || 'Unable to record exit.');
+    } finally {
+      setActionId(null);
+    }
   };
 
   const formatTime = (isoString: string) => {

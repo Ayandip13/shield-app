@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -13,6 +12,7 @@ import { Card } from '../../components/common/Card';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { theme } from '../../theme';
 import { UserProfile } from '../../types/profile';
 import { getProfile, updateProfile } from '../../services/profileService';
@@ -21,6 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 export const EditProfileScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { updateUser } = useAuth();
+  const { showSuccess, showError, showWarning } = useToast();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [name, setName] = useState<string>('');
@@ -49,7 +50,7 @@ export const EditProfileScreen: React.FC = () => {
   const handleSave = async () => {
     const trimmedName = name.trim();
     if (!trimmedName) {
-      Alert.alert('Validation Error', 'Full Name is required and cannot be empty.');
+      showWarning('Validation Error', 'Full Name is required and cannot be empty.');
       return;
     }
 
@@ -64,14 +65,10 @@ export const EditProfileScreen: React.FC = () => {
         name: updatedData.name,
       });
 
-      Alert.alert('Success', 'Your personal profile has been updated successfully.', [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]);
+      showSuccess('Success', 'Your personal profile has been updated successfully.');
+      navigation.goBack();
     } catch (err: any) {
-      Alert.alert('Update Error', err.message || 'Failed to update profile. Please try again.');
+      showError('Update Error', err.message || 'Failed to update profile. Please try again.');
     } finally {
       setIsSubmitting(false);
     }

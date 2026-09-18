@@ -15,6 +15,7 @@ import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { theme } from '../../theme';
+import { useToast } from '../../context/ToastContext';
 import { CommitteeMember } from '../../types/committee';
 import { getCommitteeMember, updateCommitteeStatus } from '../../services/committeeService';
 import { ProviderStackParamList } from '../../types/navigation';
@@ -26,6 +27,7 @@ type DetailsNavProp = NativeStackNavigationProp<ProviderStackParamList, 'Committ
 export const CommitteeDetailsScreen: React.FC = () => {
   const route = useRoute<DetailsRouteProp>();
   const navigation = useNavigation<DetailsNavProp>();
+  const { showSuccess, showError } = useToast();
   const { memberId } = route.params;
 
   const [member, setMember] = useState<CommitteeMember | null>(null);
@@ -80,8 +82,9 @@ export const CommitteeDetailsScreen: React.FC = () => {
             try {
               const updated = await updateCommitteeStatus(member._id, newStatus);
               setMember(updated);
+              showSuccess('Member Updated', `Committee member account has been ${newStatus ? 'activated' : 'deactivated'}.`);
             } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to update member status.');
+              showError('Update Failed', err.message || 'Failed to update member status.');
             } finally {
               setIsTogglingStatus(false);
             }

@@ -136,9 +136,9 @@ export const ProviderDashboardScreen: React.FC = () => {
                 style={styles.actionIconBtn}
                 onPress={() => navigation.navigate('Notifications')}
                 activeOpacity={0.7}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
-                <Ionicons name="notifications-outline" size={24} color={theme.colors.primary} />
+                <Ionicons name="notifications-outline" size={20} color={theme.colors.primary} />
                 {unreadCount > 0 && (
                   <View style={styles.bellBadge}>
                     <Text style={styles.bellBadgeText}>
@@ -149,19 +149,11 @@ export const ProviderDashboardScreen: React.FC = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.actionIconBtn}
-                onPress={() => navigation.navigate('Profile')}
-                activeOpacity={0.7}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="person-circle-outline" size={26} color={theme.colors.primary} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.actionIconBtn}
                 onPress={() => setShowLogoutModal(true)}
                 activeOpacity={0.7}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
               >
-                <Ionicons name="log-out-outline" size={24} color={theme.colors.danger} />
+                <Ionicons name="log-out-outline" size={20} color={theme.colors.danger} />
               </TouchableOpacity>
             </View>
           </View>
@@ -525,30 +517,43 @@ const styles = StyleSheet.create({
     color: theme.colors.primaryDark,
   },
   headerActions: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
-    gap: theme.spacing.xs,
+    justifyContent: 'center',
+    gap: 8,
+    paddingLeft: theme.spacing.sm,
+    borderLeftWidth: 1,
+    borderLeftColor: theme.colors.surfaceBorder,
   },
   actionIconBtn: {
-    padding: theme.spacing.xs,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.surfaceHover,
+    alignItems: 'center',
+    justifyContent: 'center',
     position: 'relative',
   },
   bellBadge: {
     position: 'absolute',
-    top: 2,
-    right: 2,
+    top: -2,
+    right: -2,
     backgroundColor: theme.colors.danger,
-    borderRadius: 8,
-    minWidth: 16,
-    height: 16,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
   },
   bellBadgeText: {
     color: '#FFFFFF',
     fontSize: 9,
     fontWeight: '700',
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   logoutBtn: {
     padding: theme.spacing.xs,

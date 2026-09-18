@@ -6,7 +6,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
@@ -15,12 +14,14 @@ import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { theme } from '../../theme';
+import { useToast } from '../../context/ToastContext';
 import { PersonType } from '../../types/entryLog';
 import { createEntryLog } from '../../services/entryLogService';
 import { Ionicons } from '@expo/vector-icons';
 
 export const AddEntryLogScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { showSuccess } = useToast();
 
   const [personName, setPersonName] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
@@ -70,16 +71,11 @@ export const AddEntryLogScreen: React.FC = () => {
         notes: notes.trim() || undefined,
       });
 
-      Alert.alert(
+      showSuccess(
         'Entry Logged Successfully',
-        `Access granted and recorded for ${personName.trim()}.`,
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]
+        `Access granted and recorded for ${personName.trim()}.`
       );
+      navigation.goBack();
     } catch (err: any) {
       setErrors({
         general: err.message || 'Failed to record entry log.',

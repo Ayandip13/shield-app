@@ -15,6 +15,7 @@ import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { theme } from '../../theme';
+import { useToast } from '../../context/ToastContext';
 import { Building } from '../../types/building';
 import { getBuilding, updateBuildingStatus } from '../../services/buildingService';
 import { ProviderStackParamList } from '../../types/navigation';
@@ -26,6 +27,7 @@ type DetailsNavProp = NativeStackNavigationProp<ProviderStackParamList, 'Buildin
 export const BuildingDetailsScreen: React.FC = () => {
   const route = useRoute<DetailsRouteProp>();
   const navigation = useNavigation<DetailsNavProp>();
+  const { showSuccess, showError } = useToast();
   const { buildingId } = route.params;
 
   const [building, setBuilding] = useState<Building | null>(null);
@@ -78,8 +80,9 @@ export const BuildingDetailsScreen: React.FC = () => {
             try {
               const updated = await updateBuildingStatus(building._id, newStatus);
               setBuilding(updated);
+              showSuccess('Building Updated', `Building has been ${newStatus ? 'activated' : 'deactivated'}.`);
             } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to update building status.');
+              showError('Update Failed', err.message || 'Failed to update building status.');
             } finally {
               setIsTogglingStatus(false);
             }
