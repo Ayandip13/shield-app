@@ -1,117 +1,104 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
 import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { theme } from '../../theme';
 import { useToast } from '../../context/ToastContext';
-import { AttendanceRecord, TodayAttendanceStatusResponse } from '../../types/attendance';
-import {
-  getGuardTodayAttendance,
-  getGuardAttendanceHistory,
-  checkInGuard,
-  checkOutGuard,
-} from '../../services/attendanceService';
+import { AttendanceRecord } from '../../types/attendance';
 import { Ionicons } from '@expo/vector-icons';
+import {
+  useGuardTodayAttendanceQuery,
+  useGuardAttendanceHistoryQuery,
+} from '../../hooks/queries/useAttendance';
+import {
+  useCheckInGuardMutation,
+  useCheckOutGuardMutation,
+} from '../../hooks/mutations/useAttendanceMutations';
+import { ListSkeleton } from '../../components/skeletons/ListSkeleton';
 
 export const GuardAttendanceScreen: React.FC = () => {
   const { showSuccess, showError } = useToast();
-  const [todayData, setTodayData] = useState<TodayAttendanceStatusResponse | null>(null);
-  const [history, setHistory] = useState<AttendanceRecord[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isActionLoading, setIsActionLoading] = useState<boolean>(false);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const loadAttendanceData = async (isPullToRefresh = false) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMsg(null);
+  const {
+    data: todayData,
+    isLoading: isLoadingToday,
+    refetch: refetchToday,
+  } = useGuardTodayAttendanceQuery();
 
-    try {
-      const [todayRes, historyRes] = await Promise.all([
-        getGuardTodayAttendance(),
-        getGuardAttendanceHistory(),
-      ]);
-      setTodayData(todayRes);
-      setHistory(historyRes);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to load attendance records.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
+  const {
+    data: history = [],
+    isLoading: isLoadingHistory,
+    isRefetching: isRefreshingHistory,
+    error: errorMsg,
+    refetch: refetchHistory,
+  } = useGuardAttendanceHistoryQuery();
+
+  const checkInMutation = useCheckInGuardMutation();
+  const checkOutMutation = useCheckOutGuardMutation();
+
+  const isLoading = isLoadingToday || isLoadingHistory;
+  const isRefreshing = isRefreshingHistory;
+  const isActionLoading = checkInMutation.isPending || checkOutMutation.isPending;
+
+  const handleRefresh = () => {
+    refetchToday();
+    refetchHistory();
   };
 
-  useEffect(() => {
-    loadAttendanceData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      handleRefresh();
+    }, [])
+  );
 
   const handleCheckIn = async () => {
-    setIsActionLoading(true);
     try {
-      await checkInGuard();
+      await checkInMutation.mutateAsync();
       showSuccess('Check-In Successful', 'Your duty session has been registered.');
-      await loadAttendanceData();
     } catch (err: any) {
       showError('Check-In Failed', err.message || 'Unable to complete check-in.');
-    } finally {
-      setIsActionLoading(false);
     }
   };
 
   const handleCheckOut = async () => {
-    setIsActionLoading(true);
     try {
-      await checkOutGuard('Shift completed');
+      await checkOutMutation.mutateAsync('Shift completed');
       showSuccess('Check-Out Successful', 'Your duty session has ended.');
-      await loadAttendanceData();
     } catch (err: any) {
       showError('Check-Out Failed', err.message || 'Unable to complete check-out.');
-    } finally {
-      setIsActionLoading(false);
     }
   };
 
   const formatTime = (timeStr?: string | null) => {
     if (!timeStr) return '--:--';
-    // Handles ISO strings like 2026-09-17T08:07:00.000Z or HH:mm format
     if (timeStr.includes('T')) {
       const d = new Date(timeStr);
       return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
     }
-    // Handles "08:00" -> 08:00 AM
-    const [h, m] = timeStr.split(':');
-    const hour = parseInt(h, 10);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const formattedHour = hour % 12 === 0 ? 12 : hour % 12;
-    return `${String(formattedHour).padStart(2, '0')}:${m} ${ampm}`;
+    return timeStr;
   };
 
   const formatDateLabel = (dateStr: string) => {
     if (!dateStr) return '';
     const d = new Date(dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`);
     if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   const getBuildingName = () => {
-    if (todayData?.guard?.building) {
-      return todayData.guard.building.name;
+    if (todayData?.attendance?.buildingId) {
+      const b = todayData.attendance.buildingId;
+      if (typeof b === 'object' && b.name) return b.name;
     }
-    return 'Assigned Building Post';
+    return 'Assigned Guard Station';
   };
 
   return (
@@ -122,7 +109,7 @@ export const GuardAttendanceScreen: React.FC = () => {
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={() => loadAttendanceData(true)}
+            onRefresh={handleRefresh}
             colors={[theme.colors.primary]}
           />
         }
@@ -151,16 +138,16 @@ export const GuardAttendanceScreen: React.FC = () => {
           <View style={styles.divider} />
 
           {isLoading && !isRefreshing ? (
-            <ActivityIndicator size="large" color={theme.colors.primary} style={styles.loader} />
+            <ListSkeleton count={2} hasSearch={false} />
           ) : errorMsg ? (
             <View style={styles.errorBox}>
               <Ionicons name="alert-circle" size={24} color={theme.colors.danger} />
-              <Text style={styles.errorText}>{errorMsg}</Text>
+              <Text style={styles.errorText}>{(errorMsg as any)?.message || 'Failed to load attendance.'}</Text>
               <Button
                 title="Retry"
                 variant="outline"
                 size="sm"
-                onPress={() => loadAttendanceData()}
+                onPress={handleRefresh}
                 style={styles.retryBtn}
               />
             </View>

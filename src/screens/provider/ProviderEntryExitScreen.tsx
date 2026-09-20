@@ -4,7 +4,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -14,79 +13,48 @@ import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { theme } from '../../theme';
 import { EntryLog, PersonType } from '../../types/entryLog';
-import { Building } from '../../types/building';
-import { getEntryLogs } from '../../services/entryLogService';
-import { getBuildings } from '../../services/buildingService';
 import { Ionicons } from '@expo/vector-icons';
+import { useBuildingsQuery } from '../../hooks/queries/useBuildings';
+import { useEntryLogsQuery } from '../../hooks/queries/useEntryLogs';
+import { ListSkeleton } from '../../components/skeletons/ListSkeleton';
 
 export const ProviderEntryExitScreen: React.FC = () => {
-  const [logs, setLogs] = useState<EntryLog[]>([]);
-  const [buildings, setBuildings] = useState<Building[]>([]);
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>('ALL');
   const [selectedType, setSelectedType] = useState<PersonType | 'ALL'>('ALL');
   const [activeOnly, setActiveOnly] = useState<boolean>(false);
 
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { data: buildings = [] } = useBuildingsQuery();
 
-  const loadData = async (
-    bId?: string,
-    pType?: PersonType | 'ALL',
-    actOnly?: boolean,
-    isPullToRefresh = false
-  ) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMsg(null);
-
-    const targetBuilding = bId !== undefined ? bId : selectedBuildingId;
-    const targetType = pType !== undefined ? pType : selectedType;
-    const targetActive = actOnly !== undefined ? actOnly : activeOnly;
-
-    try {
-      const buildingsList = await getBuildings();
-      setBuildings(buildingsList);
-
-      const data = await getEntryLogs({
-        buildingId: targetBuilding !== 'ALL' ? targetBuilding : undefined,
-        personType: targetType !== 'ALL' ? targetType : undefined,
-        active: targetActive ? true : undefined,
-      });
-
-      setLogs(data);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to load provider visitor logs.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
+  const {
+    data: logs = [],
+    isLoading,
+    isRefetching: isRefreshing,
+    error: errorMsg,
+    refetch,
+  } = useEntryLogsQuery({
+    buildingId: selectedBuildingId !== 'ALL' ? selectedBuildingId : undefined,
+    personType: selectedType !== 'ALL' ? selectedType : undefined,
+    active: activeOnly ? true : undefined,
+  });
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
+      refetch();
     }, [selectedBuildingId, selectedType, activeOnly])
   );
 
   const handleBuildingChange = (id: string) => {
     setSelectedBuildingId(id);
-    loadData(id);
   };
 
   const handleTypeChange = (t: PersonType | 'ALL') => {
     setSelectedType(t);
-    loadData(undefined, t);
   };
 
   const handleActiveToggle = () => {
-    const nextVal = !activeOnly;
-    setActiveOnly(nextVal);
-    loadData(undefined, undefined, nextVal);
+    setActiveOnly(!activeOnly);
   };
+
 
   const formatDateTime = (isoString?: string | null) => {
     if (!isoString) return '';
@@ -135,7 +103,7 @@ export const ProviderEntryExitScreen: React.FC = () => {
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={() => loadData(undefined, undefined, undefined, true)}
+            onRefresh={() => refetch()}
             colors={[theme.colors.primary]}
           />
         }
@@ -255,22 +223,19 @@ export const ProviderEntryExitScreen: React.FC = () => {
 
         {/* Content Section */}
         {isLoading && !isRefreshing ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.loadingText}>Fetching visitor log feeds...</Text>
-          </View>
+          <ListSkeleton count={4} hasSearch={false} />
         ) : errorMsg ? (
           <Card variant="outlined" style={styles.errorCard}>
             <Ionicons name="alert-circle-outline" size={36} color={theme.colors.danger} />
             <Text variant="heading" style={styles.errorTitle}>
               Failed to Fetch Logs
             </Text>
-            <Text variant="caption" style={styles.errorSub}>{errorMsg}</Text>
+            <Text variant="caption" style={styles.errorSub}>{(errorMsg as any)?.message || 'Failed to load visitor logs.'}</Text>
             <Button
               title="Try Again"
               variant="outline"
               size="sm"
-              onPress={() => loadData()}
+              onPress={() => refetch()}
               style={styles.retryBtn}
             />
           </Card>

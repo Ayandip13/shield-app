@@ -1,63 +1,53 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import React, { useCallback } from 'react';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { RouteProp } from '@react-navigation/native';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
 import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
-import { useAuth } from '../../context/AuthContext';
-import { useToast } from '../../context/ToastContext';
 import { theme } from '../../theme';
-import { EntryLog } from '../../types/entryLog';
-import { getEntryLogById, markEntryLogExit } from '../../services/entryLogService';
+import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import { GuardStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
+import { useEntryLogDetailsQuery } from '../../hooks/queries/useEntryLogs';
+import { useMarkEntryLogExitMutation } from '../../hooks/mutations/useEntryLogMutations';
+import { DetailsSkeleton } from '../../components/skeletons/DetailsSkeleton';
 
 type DetailsRouteProp = RouteProp<GuardStackParamList, 'EntryLogDetails'>;
 
 export const EntryLogDetailsScreen: React.FC = () => {
+  const { user } = useAuth();
   const route = useRoute<DetailsRouteProp>();
   const navigation = useNavigation();
-  const { user } = useAuth();
   const { showSuccess, showError } = useToast();
   const { entryLogId } = route.params;
 
-  const [log, setLog] = useState<EntryLog | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const {
+    data: log,
+    isLoading,
+    error: errorMsg,
+    refetch,
+  } = useEntryLogDetailsQuery(entryLogId);
 
-  const fetchLogDetails = async () => {
-    setIsLoading(true);
-    setErrorMsg(null);
+  const markExitMutation = useMarkEntryLogExitMutation();
+  const isProcessing = markExitMutation.isPending;
 
-    try {
-      const data = await getEntryLogById(entryLogId);
-      setLog(data);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Unable to retrieve entry log details.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchLogDetails();
-  }, [entryLogId]);
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [entryLogId])
+  );
 
   const handleMarkExit = async () => {
     if (!log) return;
 
-    setIsProcessing(true);
     try {
-      const updated = await markEntryLogExit(log._id);
-      setLog(updated);
+      await markExitMutation.mutateAsync(log._id);
       showSuccess('Exit Recorded', `${log.personName} has been marked as exited.`);
     } catch (err: any) {
       showError('Action Failed', err.message || 'Unable to mark exit.');
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -107,9 +97,8 @@ export const EntryLogDetailsScreen: React.FC = () => {
 
   if (isLoading) {
     return (
-      <ScreenWrapper style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Loading entry record details...</Text>
+      <ScreenWrapper style={styles.container}>
+        <DetailsSkeleton />
       </ScreenWrapper>
     );
   }
@@ -121,7 +110,7 @@ export const EntryLogDetailsScreen: React.FC = () => {
         <Text variant="heading" style={styles.errorTitle}>
           Record Not Found
         </Text>
-        <Text variant="caption" style={styles.errorSub}>{errorMsg || 'Log data unavailable.'}</Text>
+        <Text variant="caption" style={styles.errorSub}>{(errorMsg as any)?.message || 'Log data unavailable.'}</Text>
         <Button
           title="Back"
           variant="outline"

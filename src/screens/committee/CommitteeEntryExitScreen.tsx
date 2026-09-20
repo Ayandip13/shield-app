@@ -4,7 +4,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -14,63 +13,54 @@ import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { theme } from '../../theme';
 import { EntryLog, PersonType } from '../../types/entryLog';
-import { getEntryLogs, getActiveEntryLogs } from '../../services/entryLogService';
-import { getMyCommitteeProfile } from '../../services/committeeService';
 import { CommitteeMember } from '../../types/committee';
 import { Ionicons } from '@expo/vector-icons';
+import { useMyCommitteeProfileQuery } from '../../hooks/queries/useCommittee';
+import { useActiveEntryLogsQuery, useEntryLogsQuery } from '../../hooks/queries/useEntryLogs';
+import { ListSkeleton } from '../../components/skeletons/ListSkeleton';
 
 export const CommitteeEntryExitScreen: React.FC = () => {
-  const [profile, setProfile] = useState<CommitteeMember | null>(null);
-  const [activeEntries, setActiveEntries] = useState<EntryLog[]>([]);
-  const [historyLogs, setHistoryLogs] = useState<EntryLog[]>([]);
   const [selectedType, setSelectedType] = useState<PersonType | 'ALL'>('ALL');
   const [activeTab, setActiveTab] = useState<'inside' | 'history'>('inside');
 
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { data: profileRaw, refetch: refetchProfile } = useMyCommitteeProfileQuery();
+  const profile = profileRaw as CommitteeMember | null;
 
-  const loadData = async (typeFilter?: PersonType | 'ALL', isPullToRefresh = false) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMsg(null);
+  const {
+    data: activeEntries = [],
+    isLoading: isLoadingActive,
+    refetch: refetchActive,
+  } = useActiveEntryLogsQuery();
 
-    const activeType = typeFilter !== undefined ? typeFilter : selectedType;
+  const {
+    data: historyLogs = [],
+    isLoading: isLoadingHistory,
+    isRefetching: isRefreshingHistory,
+    error: errorMsg,
+    refetch: refetchHistory,
+  } = useEntryLogsQuery({
+    personType: selectedType !== 'ALL' ? selectedType : undefined,
+  });
 
-    try {
-      const committeeProfile = await getMyCommitteeProfile();
-      setProfile(committeeProfile);
+  const isLoading = isLoadingActive || isLoadingHistory;
+  const isRefreshing = isRefreshingHistory;
 
-      const [activeRes, historyRes] = await Promise.all([
-        getActiveEntryLogs(),
-        getEntryLogs({
-          personType: activeType !== 'ALL' ? activeType : undefined,
-        }),
-      ]);
-
-      setActiveEntries(activeRes);
-      setHistoryLogs(historyRes);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to load building visitor logs.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
+  const handleRefresh = () => {
+    refetchProfile();
+    refetchActive();
+    refetchHistory();
   };
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
+      handleRefresh();
     }, [selectedType])
   );
 
   const handleTypeChange = (type: PersonType | 'ALL') => {
     setSelectedType(type);
-    loadData(type);
   };
+
 
   const formatDateTime = (isoString?: string | null) => {
     if (!isoString) return '';
@@ -112,7 +102,7 @@ export const CommitteeEntryExitScreen: React.FC = () => {
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={() => loadData(undefined, true)}
+            onRefresh={handleRefresh}
             colors={[theme.colors.committee]}
           />
         }
@@ -160,22 +150,19 @@ export const CommitteeEntryExitScreen: React.FC = () => {
 
         {/* Content Section */}
         {isLoading && !isRefreshing ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={theme.colors.committee} />
-            <Text style={styles.loadingText}>Fetching building visitor feeds...</Text>
-          </View>
+          <ListSkeleton count={4} hasSearch={false} />
         ) : errorMsg ? (
           <Card variant="outlined" style={styles.errorCard}>
             <Ionicons name="alert-circle-outline" size={36} color={theme.colors.danger} />
             <Text variant="heading" style={styles.errorTitle}>
               Failed to Load Access Logs
             </Text>
-            <Text variant="caption" style={styles.errorSub}>{errorMsg}</Text>
+            <Text variant="caption" style={styles.errorSub}>{(errorMsg as any)?.message || 'Failed to load visitor logs.'}</Text>
             <Button
               title="Try Again"
               variant="outline"
               size="sm"
-              onPress={() => loadData()}
+              onPress={handleRefresh}
               style={styles.retryBtn}
             />
           </Card>

@@ -4,7 +4,6 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -16,42 +15,28 @@ import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { theme } from '../../theme';
 import { CommitteeMember } from '../../types/committee';
-import { getCommitteeMembers } from '../../services/committeeService';
 import { ProviderStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
+import { useCommitteeMembersQuery } from '../../hooks/queries/useCommittee';
+import { ListSkeleton } from '../../components/skeletons/ListSkeleton';
 
 type NavigationProp = NativeStackNavigationProp<ProviderStackParamList, 'CommitteeList'>;
 
 export const CommitteeListScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const [members, setMembers] = useState<CommitteeMember[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const fetchMembersData = async (isPullToRefresh = false) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMessage(null);
-
-    try {
-      const data = await getCommitteeMembers();
-      setMembers(data);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to fetch committee members list.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
+  const {
+    data: members = [],
+    isLoading,
+    isRefetching: isRefreshing,
+    error,
+    refetch,
+  } = useCommitteeMembersQuery();
 
   useFocusEffect(
     useCallback(() => {
-      fetchMembersData();
+      refetch();
     }, [])
   );
 
@@ -116,8 +101,14 @@ export const CommitteeListScreen: React.FC = () => {
             </Text>
 
             <Text variant="caption" style={styles.contactText}>
-              ✉️ {item.email} {item.phone ? `• 📞 ${item.phone}` : ''}
+              ✉️ {item.email}
             </Text>
+
+            {item.phone ? (
+              <Text variant="caption" style={styles.contactText}>
+                📞 {item.phone}
+              </Text>
+            ) : null}
           </View>
         </View>
       </TouchableOpacity>
@@ -150,24 +141,21 @@ export const CommitteeListScreen: React.FC = () => {
 
       {/* Content List / States */}
       {isLoading && !isRefreshing ? (
-        <View style={styles.centerState}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.stateText}>Loading committee directory...</Text>
-        </View>
-      ) : errorMessage ? (
+        <ListSkeleton count={4} hasSearch={false} />
+      ) : error ? (
         <View style={styles.centerState}>
           <Ionicons name="alert-circle-outline" size={44} color={theme.colors.danger} />
           <Text variant="heading" style={styles.errorTitle}>
             Failed to Load Committee Members
           </Text>
           <Text variant="caption" style={styles.errorSubtitle}>
-            {errorMessage}
+            {(error as any)?.message || 'Failed to fetch committee members list.'}
           </Text>
           <Button
             title="Retry"
             variant="outline"
             size="sm"
-            onPress={() => fetchMembersData()}
+            onPress={() => refetch()}
             style={styles.retryBtn}
           />
         </View>
@@ -201,7 +189,7 @@ export const CommitteeListScreen: React.FC = () => {
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
-              onRefresh={() => fetchMembersData(true)}
+              onRefresh={() => refetch()}
               colors={[theme.colors.primary]}
             />
           }

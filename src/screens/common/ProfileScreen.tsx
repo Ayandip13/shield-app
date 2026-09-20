@@ -4,7 +4,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -16,42 +15,29 @@ import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../theme';
 import { UserProfile } from '../../types/profile';
-import { getProfile } from '../../services/profileService';
 import { formatSalary } from '../../utils/currencyFormatter';
 import { Ionicons } from '@expo/vector-icons';
+import { useProfileQuery } from '../../hooks/queries/useProfile';
+import { ProfileSkeleton } from '../../components/skeletons/ProfileSkeleton';
 
 export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { logout } = useAuth();
-
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
 
-  const fetchProfile = async (isPullToRefresh = false) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMessage(null);
+  const {
+    data: profileRaw,
+    isLoading,
+    isRefetching: isRefreshing,
+    error: errorMessage,
+    refetch,
+  } = useProfileQuery();
 
-    try {
-      const data = await getProfile();
-      setProfile(data);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to load user profile information.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
+  const profile = profileRaw as UserProfile | null;
 
   useFocusEffect(
     useCallback(() => {
-      fetchProfile();
+      refetch();
     }, [])
   );
 
@@ -98,16 +84,13 @@ export const ProfileScreen: React.FC = () => {
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={() => fetchProfile(true)}
+            onRefresh={() => refetch()}
             colors={[theme.colors.primary]}
           />
         }
       >
         {isLoading && !isRefreshing ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.loadingText}>Loading Profile Information...</Text>
-          </View>
+          <ProfileSkeleton />
         ) : errorMessage ? (
           <Card variant="outlined" style={styles.errorCard}>
             <Ionicons name="alert-circle-outline" size={36} color={theme.colors.danger} />
@@ -115,13 +98,13 @@ export const ProfileScreen: React.FC = () => {
               Failed to Load Profile
             </Text>
             <Text variant="caption" style={styles.errorSubtitle}>
-              {errorMessage}
+              {(errorMessage as any)?.message || 'Failed to load user profile information.'}
             </Text>
             <Button
               title="Try Again"
               variant="outline"
               size="sm"
-              onPress={() => fetchProfile()}
+              onPress={() => refetch()}
               style={styles.retryButton}
             />
           </Card>

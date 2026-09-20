@@ -4,7 +4,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -16,14 +15,15 @@ import { Button } from '../../components/common/Button';
 import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../theme';
 import { CommitteeMember } from '../../types/committee';
-import { getMyCommitteeProfile } from '../../services/committeeService';
-import { getDashboard } from '../../services/dashboardService';
-import { getUnreadCount } from '../../services/notificationService';
 import { CommitteeDashboardData, ActivityItem } from '../../types/dashboard';
 import { formatRelativeDateTime } from '../../utils/dateFormatter';
 import { CommitteeStackParamList } from '../../types/navigation';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { Ionicons } from '@expo/vector-icons';
+import { useMyCommitteeProfileQuery } from '../../hooks/queries/useCommittee';
+import { useDashboardQuery } from '../../hooks/queries/useDashboard';
+import { useUnreadNotificationCountQuery } from '../../hooks/queries/useNotifications';
+import { DashboardSkeleton } from '../../components/skeletons/DashboardSkeleton';
 
 type NavigationProp = NativeStackNavigationProp<CommitteeStackParamList, 'CommitteeHome'>;
 
@@ -31,44 +31,34 @@ export const CommitteeHomeScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { user, logout } = useAuth();
 
-  const [profile, setProfile] = useState<CommitteeMember | null>(null);
-  const [dashboardData, setDashboardData] = useState<CommitteeDashboardData | null>(null);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
 
-  const fetchCommitteeData = async (isPullToRefresh = false) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMessage(null);
+  const { data: profileRaw, refetch: refetchProfile } = useMyCommitteeProfileQuery();
+  const {
+    data: dashboardDataRaw,
+    isLoading: isLoadingDashboard,
+    isRefetching: isRefreshing,
+    error: errorMessage,
+    refetch: refetchDashboard,
+  } = useDashboardQuery();
+  const { data: unreadCount = 0, refetch: refetchUnread } = useUnreadNotificationCountQuery();
 
-    try {
-      const [profData, dashData, uCount] = await Promise.all([
-        getMyCommitteeProfile().catch(() => null),
-        getDashboard(),
-        getUnreadCount().catch(() => 0),
-      ]);
-      setProfile(profData);
-      setDashboardData(dashData as CommitteeDashboardData);
-      setUnreadCount(uCount);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to load building operational summary.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
+  const profile = profileRaw as CommitteeMember | null;
+  const dashboardData = dashboardDataRaw as CommitteeDashboardData | null;
+  const isLoading = isLoadingDashboard;
+
+  const handleRefresh = () => {
+    refetchProfile();
+    refetchDashboard();
+    refetchUnread();
   };
 
   useFocusEffect(
     useCallback(() => {
-      fetchCommitteeData();
+      handleRefresh();
     }, [])
   );
+
 
   const building = dashboardData?.building;
   const summary = dashboardData?.summary;
@@ -95,7 +85,7 @@ export const CommitteeHomeScreen: React.FC = () => {
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={() => fetchCommitteeData(true)}
+            onRefresh={handleRefresh}
             colors={[theme.colors.committee]}
           />
         }
@@ -149,32 +139,32 @@ export const CommitteeHomeScreen: React.FC = () => {
           </View>
         </Card>
 
-        {/* Building Info Card */}
-        <Card variant="outlined" style={styles.infoCard}>
-          <Text variant="heading" style={styles.sectionTitle}>
-            Represented Building
-          </Text>
-          <View style={styles.divider} />
+        {isLoading && !isRefreshing ? (
+          <DashboardSkeleton />
+        ) : (
+          <>
+            {/* Building Info Card */}
+            <Card variant="outlined" style={styles.infoCard}>
+              <Text variant="heading" style={styles.sectionTitle}>
+                Represented Building
+              </Text>
+              <View style={styles.divider} />
 
-          {isLoading && !isRefreshing ? (
-            <ActivityIndicator color={theme.colors.committee} />
-          ) : (
-            <View style={styles.infoRow}>
-              <Ionicons name="business" size={24} color={theme.colors.committee} />
-              <View style={styles.infoCol}>
-                <Text variant="caption">Building Name</Text>
-                <Text variant="body" style={styles.infoValText}>
-                  {building?.name || 'Assigned Building'}
-                </Text>
-                {building?.address ? (
-                  <Text variant="caption" style={styles.infoSubValText}>
-                    📍 {building.address}
+              <View style={styles.infoRow}>
+                <Ionicons name="business" size={24} color={theme.colors.committee} />
+                <View style={styles.infoCol}>
+                  <Text variant="caption">Building Name</Text>
+                  <Text variant="body" style={styles.infoValText}>
+                    {building?.name || 'Assigned Building'}
                   </Text>
-                ) : null}
+                  {building?.address ? (
+                    <Text variant="caption" style={styles.infoSubValText}>
+                      📍 {building.address}
+                    </Text>
+                  ) : null}
+                </View>
               </View>
-            </View>
-          )}
-        </Card>
+            </Card>
 
         {/* Today's Security Overview Box */}
         {summary && (
@@ -379,6 +369,8 @@ export const CommitteeHomeScreen: React.FC = () => {
               </Card>
             ))}
           </View>
+        )}
+        </>
         )}
 
         <Button

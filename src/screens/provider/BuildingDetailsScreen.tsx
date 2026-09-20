@@ -1,9 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   Alert,
   RefreshControl,
 } from 'react-native';
@@ -16,10 +15,11 @@ import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { theme } from '../../theme';
 import { useToast } from '../../context/ToastContext';
-import { Building } from '../../types/building';
-import { getBuilding, updateBuildingStatus } from '../../services/buildingService';
 import { ProviderStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
+import { useBuildingDetailsQuery } from '../../hooks/queries/useBuildings';
+import { useUpdateBuildingStatusMutation } from '../../hooks/mutations/useBuildingMutations';
+import { DetailsSkeleton } from '../../components/skeletons/DetailsSkeleton';
 
 type DetailsRouteProp = RouteProp<ProviderStackParamList, 'BuildingDetails'>;
 type DetailsNavProp = NativeStackNavigationProp<ProviderStackParamList, 'BuildingDetails'>;
@@ -30,34 +30,20 @@ export const BuildingDetailsScreen: React.FC = () => {
   const { showSuccess, showError } = useToast();
   const { buildingId } = route.params;
 
-  const [building, setBuilding] = useState<Building | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [isTogglingStatus, setIsTogglingStatus] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const {
+    data: building,
+    isLoading,
+    isRefetching: isRefreshing,
+    error,
+    refetch,
+  } = useBuildingDetailsQuery(buildingId);
 
-  const fetchDetails = async (isPullToRefresh = false) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMessage(null);
-
-    try {
-      const data = await getBuilding(buildingId);
-      setBuilding(data);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to fetch building details.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
+  const updateStatusMutation = useUpdateBuildingStatusMutation(buildingId);
+  const isTogglingStatus = updateStatusMutation.isPending;
 
   useFocusEffect(
     useCallback(() => {
-      fetchDetails();
+      refetch();
     }, [buildingId])
   );
 
@@ -76,15 +62,11 @@ export const BuildingDetailsScreen: React.FC = () => {
           text: actionLabel,
           style: newStatus ? 'default' : 'destructive',
           onPress: async () => {
-            setIsTogglingStatus(true);
             try {
-              const updated = await updateBuildingStatus(building._id, newStatus);
-              setBuilding(updated);
+              await updateStatusMutation.mutateAsync(newStatus);
               showSuccess('Building Updated', `Building has been ${newStatus ? 'activated' : 'deactivated'}.`);
             } catch (err: any) {
               showError('Update Failed', err.message || 'Failed to update building status.');
-            } finally {
-              setIsTogglingStatus(false);
             }
           },
         },
@@ -107,14 +89,13 @@ export const BuildingDetailsScreen: React.FC = () => {
 
   if (isLoading && !isRefreshing) {
     return (
-      <ScreenWrapper style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Loading building information...</Text>
+      <ScreenWrapper style={styles.container}>
+        <DetailsSkeleton />
       </ScreenWrapper>
     );
   }
 
-  if (errorMessage || !building) {
+  if (error || !building) {
     return (
       <ScreenWrapper style={styles.centerContainer}>
         <Ionicons name="alert-circle-outline" size={48} color={theme.colors.danger} />
@@ -122,7 +103,7 @@ export const BuildingDetailsScreen: React.FC = () => {
           Building Not Found
         </Text>
         <Text variant="caption" style={styles.errorSubtitle}>
-          {errorMessage || 'Unable to retrieve building record.'}
+          {(error as any)?.message || 'Unable to retrieve building record.'}
         </Text>
         <Button
           title="Back to Buildings"
@@ -141,7 +122,7 @@ export const BuildingDetailsScreen: React.FC = () => {
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={() => fetchDetails(true)}
+            onRefresh={() => refetch()}
             colors={[theme.colors.primary]}
           />
         }

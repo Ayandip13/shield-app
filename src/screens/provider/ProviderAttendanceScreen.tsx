@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -14,59 +13,36 @@ import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { theme } from '../../theme';
 import { AttendanceRecord } from '../../types/attendance';
-import { Building } from '../../types/building';
-import { getProviderAttendance } from '../../services/attendanceService';
-import { getBuildings } from '../../services/buildingService';
 import { Ionicons } from '@expo/vector-icons';
+import { useBuildingsQuery } from '../../hooks/queries/useBuildings';
+import { useProviderAttendanceQuery } from '../../hooks/queries/useAttendance';
+import { ListSkeleton } from '../../components/skeletons/ListSkeleton';
 
 export const ProviderAttendanceScreen: React.FC = () => {
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [buildings, setBuildings] = useState<Building[]>([]);
   const [selectedBuildingId, setSelectedBuildingId] = useState<string>('ALL');
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const loadData = async (buildingIdFilter?: string, isPullToRefresh = false) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMsg(null);
+  const { data: buildings = [] } = useBuildingsQuery();
 
-    try {
-      const buildingsList = await getBuildings();
-      setBuildings(buildingsList);
-
-      const targetBuildingId =
-        buildingIdFilter !== undefined
-          ? buildingIdFilter
-          : selectedBuildingId;
-
-      const attendanceData = await getProviderAttendance({
-        buildingId: targetBuildingId !== 'ALL' ? targetBuildingId : undefined,
-      });
-
-      setRecords(attendanceData);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to fetch provider attendance records.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
+  const {
+    data: records = [],
+    isLoading,
+    isRefetching: isRefreshing,
+    error: errorMsg,
+    refetch: refetchAttendance,
+  } = useProviderAttendanceQuery({
+    buildingId: selectedBuildingId !== 'ALL' ? selectedBuildingId : undefined,
+  });
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
+      refetchAttendance();
     }, [selectedBuildingId])
   );
 
   const handleBuildingFilterChange = (buildingId: string) => {
     setSelectedBuildingId(buildingId);
-    loadData(buildingId);
   };
+
 
   const formatTime = (timeStr?: string | null) => {
     if (!timeStr) return '--:--';
@@ -113,7 +89,7 @@ export const ProviderAttendanceScreen: React.FC = () => {
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={() => loadData(undefined, true)}
+            onRefresh={() => refetchAttendance()}
             colors={[theme.colors.primary]}
           />
         }
@@ -182,22 +158,19 @@ export const ProviderAttendanceScreen: React.FC = () => {
 
         {/* Content Area */}
         {isLoading && !isRefreshing ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.loadingText}>Fetching guard attendance data...</Text>
-          </View>
+          <ListSkeleton count={4} hasSearch={false} />
         ) : errorMsg ? (
           <Card variant="outlined" style={styles.errorCard}>
             <Ionicons name="alert-circle-outline" size={36} color={theme.colors.danger} />
             <Text variant="heading" style={styles.errorTitle}>
               Failed to Load Attendance
             </Text>
-            <Text variant="caption" style={styles.errorSub}>{errorMsg}</Text>
+            <Text variant="caption" style={styles.errorSub}>{(errorMsg as any)?.message || 'Failed to load attendance records.'}</Text>
             <Button
               title="Try Again"
               variant="outline"
               size="sm"
-              onPress={() => loadData()}
+              onPress={() => refetchAttendance()}
               style={styles.retryBtn}
             />
           </Card>

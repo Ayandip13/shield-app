@@ -4,7 +4,6 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -16,43 +15,29 @@ import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { theme } from '../../theme';
 import { Guard } from '../../types/guard';
-import { getGuards } from '../../services/guardService';
 import { formatSalary } from '../../utils/currencyFormatter';
 import { ProviderStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
+import { useGuardsQuery } from '../../hooks/queries/useGuards';
+import { ListSkeleton } from '../../components/skeletons/ListSkeleton';
 
 type NavigationProp = NativeStackNavigationProp<ProviderStackParamList, 'GuardsList'>;
 
 export const GuardsListScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const [guards, setGuards] = useState<Guard[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const fetchGuardsData = async (isPullToRefresh = false) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMessage(null);
-
-    try {
-      const data = await getGuards();
-      setGuards(data);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to fetch guards list.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
+  const {
+    data: guards = [],
+    isLoading,
+    isRefetching: isRefreshing,
+    error,
+    refetch,
+  } = useGuardsQuery();
 
   useFocusEffect(
     useCallback(() => {
-      fetchGuardsData();
+      refetch();
     }, [])
   );
 
@@ -112,20 +97,14 @@ export const GuardsListScreen: React.FC = () => {
             </View>
 
             {item.employeeId ? (
-              <Text variant="caption" style={styles.employeeIdText}>
-                ID: {item.employeeId} {item.designation ? `• ${item.designation}` : ''}
+              <Text variant="caption" style={styles.contactText}>
+                ID: {item.employeeId}
               </Text>
             ) : null}
 
             <Text variant="caption" style={styles.buildingText}>
               🏢 {getBuildingName(item.buildingId)}
             </Text>
-
-            {item.phone ? (
-              <Text variant="caption" style={styles.contactText}>
-                📞 {item.phone}
-              </Text>
-            ) : null}
 
             {item.monthlySalary !== undefined && item.monthlySalary !== null ? (
               <Text variant="caption" style={styles.salaryText}>
@@ -164,24 +143,21 @@ export const GuardsListScreen: React.FC = () => {
 
       {/* Content List / States */}
       {isLoading && !isRefreshing ? (
-        <View style={styles.centerState}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.stateText}>Loading guard personnel...</Text>
-        </View>
-      ) : errorMessage ? (
+        <ListSkeleton count={5} hasSearch={false} />
+      ) : error ? (
         <View style={styles.centerState}>
           <Ionicons name="alert-circle-outline" size={44} color={theme.colors.danger} />
           <Text variant="heading" style={styles.errorTitle}>
             Failed to Load Guards
           </Text>
           <Text variant="caption" style={styles.errorSubtitle}>
-            {errorMessage}
+            {(error as any)?.message || 'Failed to fetch guards list.'}
           </Text>
           <Button
             title="Retry"
             variant="outline"
             size="sm"
-            onPress={() => fetchGuardsData()}
+            onPress={() => refetch()}
             style={styles.retryBtn}
           />
         </View>
@@ -215,7 +191,7 @@ export const GuardsListScreen: React.FC = () => {
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
-              onRefresh={() => fetchGuardsData(true)}
+              onRefresh={() => refetch()}
               colors={[theme.colors.primary]}
             />
           }

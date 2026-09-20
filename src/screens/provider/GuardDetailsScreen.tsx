@@ -1,9 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   Alert,
   RefreshControl,
 } from 'react-native';
@@ -16,11 +15,12 @@ import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { theme } from '../../theme';
 import { useToast } from '../../context/ToastContext';
-import { Guard } from '../../types/guard';
-import { getGuard, updateGuardStatus } from '../../services/guardService';
 import { formatSalary } from '../../utils/currencyFormatter';
 import { ProviderStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
+import { useGuardDetailsQuery } from '../../hooks/queries/useGuards';
+import { useUpdateGuardStatusMutation } from '../../hooks/mutations/useGuardMutations';
+import { DetailsSkeleton } from '../../components/skeletons/DetailsSkeleton';
 
 type DetailsRouteProp = RouteProp<ProviderStackParamList, 'GuardDetails'>;
 type DetailsNavProp = NativeStackNavigationProp<ProviderStackParamList, 'GuardDetails'>;
@@ -31,41 +31,20 @@ export const GuardDetailsScreen: React.FC = () => {
   const { showSuccess, showError } = useToast();
   const { guardId } = route.params;
 
-  const [guard, setGuard] = useState<Guard | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [isTogglingStatus, setIsTogglingStatus] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const {
+    data: guard,
+    isLoading,
+    isRefetching: isRefreshing,
+    error,
+    refetch,
+  } = useGuardDetailsQuery(guardId);
 
-  const fetchDetails = async (isPullToRefresh = false) => {
-    if (!guardId) {
-      setErrorMessage('Missing guard identifier.');
-      setIsLoading(false);
-      return;
-    }
-
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMessage(null);
-
-    try {
-      const data = await getGuard(guardId);
-      setGuard(data);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to fetch guard details.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
-
+  const updateStatusMutation = useUpdateGuardStatusMutation(guardId);
+  const isTogglingStatus = updateStatusMutation.isPending;
 
   useFocusEffect(
     useCallback(() => {
-      fetchDetails();
+      refetch();
     }, [guardId])
   );
 
@@ -86,15 +65,11 @@ export const GuardDetailsScreen: React.FC = () => {
           text: actionLabel,
           style: newStatus ? 'default' : 'destructive',
           onPress: async () => {
-            setIsTogglingStatus(true);
             try {
-              const updated = await updateGuardStatus(guard._id, newStatus);
-              setGuard(updated);
+              await updateStatusMutation.mutateAsync(newStatus);
               showSuccess('Guard Updated', `Guard account has been ${newStatus ? 'activated' : 'deactivated'}.`);
             } catch (err: any) {
               showError('Update Failed', err.message || 'Failed to update guard status.');
-            } finally {
-              setIsTogglingStatus(false);
             }
           },
         },
@@ -132,14 +107,13 @@ export const GuardDetailsScreen: React.FC = () => {
 
   if (isLoading && !isRefreshing) {
     return (
-      <ScreenWrapper style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Loading guard record...</Text>
+      <ScreenWrapper style={styles.container}>
+        <DetailsSkeleton />
       </ScreenWrapper>
     );
   }
 
-  if (errorMessage || !guard) {
+  if (error || !guard) {
     return (
       <ScreenWrapper style={styles.centerContainer}>
         <Ionicons name="alert-circle-outline" size={48} color={theme.colors.danger} />
@@ -147,7 +121,7 @@ export const GuardDetailsScreen: React.FC = () => {
           Guard Not Found
         </Text>
         <Text variant="caption" style={styles.errorSubtitle}>
-          {errorMessage || 'Unable to retrieve guard record.'}
+          {(error as any)?.message || 'Unable to retrieve guard record.'}
         </Text>
         <Button
           title="Back to Guards"
@@ -166,7 +140,7 @@ export const GuardDetailsScreen: React.FC = () => {
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={() => fetchDetails(true)}
+            onRefresh={() => refetch()}
             colors={[theme.colors.primary]}
           />
         }

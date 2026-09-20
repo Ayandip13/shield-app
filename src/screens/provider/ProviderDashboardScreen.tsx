@@ -4,7 +4,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
   FlatList,
 } from 'react-native';
@@ -17,14 +16,15 @@ import { Button } from '../../components/common/Button';
 import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../theme';
 import { Building } from '../../types/building';
-import { getBuildings } from '../../services/buildingService';
-import { getDashboard } from '../../services/dashboardService';
-import { getUnreadCount } from '../../services/notificationService';
 import { ProviderDashboardData, ActivityItem } from '../../types/dashboard';
 import { formatRelativeDateTime } from '../../utils/dateFormatter';
 import { ProviderStackParamList } from '../../types/navigation';
 import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { Ionicons } from '@expo/vector-icons';
+import { useBuildingsQuery } from '../../hooks/queries/useBuildings';
+import { useDashboardQuery } from '../../hooks/queries/useDashboard';
+import { useUnreadNotificationCountQuery } from '../../hooks/queries/useNotifications';
+import { DashboardSkeleton } from '../../components/skeletons/DashboardSkeleton';
 
 type NavigationProp = NativeStackNavigationProp<ProviderStackParamList, 'ProviderDashboard'>;
 
@@ -33,44 +33,42 @@ export const ProviderDashboardScreen: React.FC = () => {
   const { user, logout } = useAuth();
 
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | undefined>(undefined);
-  const [buildings, setBuildings] = useState<Building[]>([]);
-  const [dashboardData, setDashboardData] = useState<ProviderDashboardData | null>(null);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
 
-  const fetchDashboardData = async (isPullToRefresh = false) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMessage(null);
+  const {
+    data: buildings = [],
+    isLoading: isLoadingBuildings,
+    refetch: refetchBuildings,
+  } = useBuildingsQuery();
 
-    try {
-      const [bList, dash, uCount] = await Promise.all([
-        getBuildings(),
-        getDashboard(selectedBuildingId),
-        getUnreadCount().catch(() => 0),
-      ]);
-      setBuildings(bList);
-      setDashboardData(dash as ProviderDashboardData);
-      setUnreadCount(uCount);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to load operational dashboard data.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
+  const {
+    data: dashboardDataRaw,
+    isLoading: isLoadingDashboard,
+    isRefetching: isRefetchingDashboard,
+    error: dashboardError,
+    refetch: refetchDashboard,
+  } = useDashboardQuery(selectedBuildingId);
+
+  const { data: unreadCount = 0, refetch: refetchUnread } = useUnreadNotificationCountQuery();
+
+  const dashboardData = dashboardDataRaw as ProviderDashboardData | null;
+  const isLoading = isLoadingBuildings || isLoadingDashboard;
+  const isRefreshing = isRefetchingDashboard;
+
+  const handleRefresh = () => {
+    refetchBuildings();
+    refetchDashboard();
+    refetchUnread();
   };
 
   useFocusEffect(
     useCallback(() => {
-      fetchDashboardData();
+      refetchBuildings();
+      refetchDashboard();
+      refetchUnread();
     }, [selectedBuildingId])
   );
+
 
   const getInitials = (name?: string) => {
     if (!name) return 'PA';
@@ -105,7 +103,7 @@ export const ProviderDashboardScreen: React.FC = () => {
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={() => fetchDashboardData(true)}
+            onRefresh={handleRefresh}
             colors={[theme.colors.primary]}
           />
         }
@@ -264,13 +262,10 @@ export const ProviderDashboardScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Loading State */}
+        {/* Skeleton / Loading / Error State */}
         {isLoading && !isRefreshing ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.loadingText}>Loading Security Metrics...</Text>
-          </View>
-        ) : errorMessage ? (
+          <DashboardSkeleton />
+        ) : dashboardError ? (
           /* Error State */
           <Card variant="outlined" style={styles.errorCard}>
             <Ionicons name="alert-circle-outline" size={36} color={theme.colors.danger} />
@@ -278,13 +273,13 @@ export const ProviderDashboardScreen: React.FC = () => {
               Unable to Load Dashboard
             </Text>
             <Text variant="caption" style={styles.errorSubtitle}>
-              {errorMessage}
+              {(dashboardError as any)?.message || 'Failed to load operational dashboard data.'}
             </Text>
             <Button
               title="Try Again"
               variant="outline"
               size="sm"
-              onPress={() => fetchDashboardData()}
+              onPress={handleRefresh}
               style={styles.retryButton}
             />
           </Card>

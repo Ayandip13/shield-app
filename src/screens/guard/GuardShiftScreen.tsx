@@ -1,47 +1,43 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useCallback } from 'react';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
 import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
 import { theme } from '../../theme';
-import { getMyGuardProfile } from '../../services/guardService';
-import { getGuardShift } from '../../services/shiftService';
 import { Guard } from '../../types/guard';
 import { GuardShift } from '../../types/shift';
 import { Ionicons } from '@expo/vector-icons';
+import { useMyGuardProfileQuery } from '../../hooks/queries/useGuards';
+import { useGuardShiftQuery } from '../../hooks/queries/useShifts';
+import { DetailsSkeleton } from '../../components/skeletons/DetailsSkeleton';
 
 export const GuardShiftScreen: React.FC = () => {
-  const [profile, setProfile] = useState<Guard | null>(null);
-  const [shift, setShift] = useState<GuardShift | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { data: profileRaw, refetch: refetchProfile } = useMyGuardProfileQuery();
+  const profile = profileRaw as Guard | null;
 
-  const loadData = async (isPullToRefresh = false) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMsg(null);
+  const guardId = profile?._id || '';
+  const {
+    data: shiftRaw,
+    isLoading: isLoadingShift,
+    isRefetching: isRefreshing,
+    error: errorMsg,
+    refetch: refetchShift,
+  } = useGuardShiftQuery(guardId);
 
-    try {
-      const guardProfile = await getMyGuardProfile();
-      setProfile(guardProfile);
+  const shift = shiftRaw as GuardShift | null;
+  const isLoading = isLoadingShift || !profile;
 
-      const shiftData = await getGuardShift(guardProfile._id);
-      setShift(shiftData);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Unable to load shift schedule.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
+  const handleRefresh = () => {
+    refetchProfile();
+    if (guardId) refetchShift();
   };
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      handleRefresh();
+    }, [guardId])
+  );
 
   const formatTime = (timeStr?: string) => {
     if (!timeStr) return '--:--';
@@ -74,23 +70,20 @@ export const GuardShiftScreen: React.FC = () => {
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={() => loadData(true)}
+            onRefresh={handleRefresh}
             colors={[theme.colors.primary]}
           />
         }
       >
         {isLoading && !isRefreshing ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.loadingText}>Loading shift schedule...</Text>
-          </View>
+          <DetailsSkeleton />
         ) : errorMsg ? (
           <Card variant="outlined" style={styles.errorCard}>
             <Ionicons name="alert-circle-outline" size={36} color={theme.colors.danger} />
             <Text variant="heading" style={styles.errorTitle}>
               Error Loading Shift
             </Text>
-            <Text variant="caption" style={styles.errorSub}>{errorMsg}</Text>
+            <Text variant="caption" style={styles.errorSub}>{(errorMsg as any)?.message || 'Unable to load shift schedule.'}</Text>
           </Card>
         ) : (
           <>

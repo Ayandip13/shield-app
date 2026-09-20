@@ -1,9 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   Alert,
   RefreshControl,
 } from 'react-native';
@@ -16,10 +15,11 @@ import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { theme } from '../../theme';
 import { useToast } from '../../context/ToastContext';
-import { CommitteeMember } from '../../types/committee';
-import { getCommitteeMember, updateCommitteeStatus } from '../../services/committeeService';
 import { ProviderStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
+import { useCommitteeMemberDetailsQuery } from '../../hooks/queries/useCommittee';
+import { useUpdateCommitteeStatusMutation } from '../../hooks/mutations/useCommitteeMutations';
+import { DetailsSkeleton } from '../../components/skeletons/DetailsSkeleton';
 
 type DetailsRouteProp = RouteProp<ProviderStackParamList, 'CommitteeDetails'>;
 type DetailsNavProp = NativeStackNavigationProp<ProviderStackParamList, 'CommitteeDetails'>;
@@ -30,41 +30,20 @@ export const CommitteeDetailsScreen: React.FC = () => {
   const { showSuccess, showError } = useToast();
   const { memberId } = route.params;
 
-  const [member, setMember] = useState<CommitteeMember | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [isTogglingStatus, setIsTogglingStatus] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const {
+    data: member,
+    isLoading,
+    isRefetching: isRefreshing,
+    error,
+    refetch,
+  } = useCommitteeMemberDetailsQuery(memberId);
 
-  const fetchDetails = async (isPullToRefresh = false) => {
-    if (!memberId) {
-      setErrorMessage('Missing committee member identifier.');
-      setIsLoading(false);
-      return;
-    }
-
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMessage(null);
-
-    try {
-      const data = await getCommitteeMember(memberId);
-      setMember(data);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to fetch committee member details.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
-
+  const updateStatusMutation = useUpdateCommitteeStatusMutation(memberId);
+  const isTogglingStatus = updateStatusMutation.isPending;
 
   useFocusEffect(
     useCallback(() => {
-      fetchDetails();
+      refetch();
     }, [memberId])
   );
 
@@ -85,15 +64,11 @@ export const CommitteeDetailsScreen: React.FC = () => {
           text: actionLabel,
           style: newStatus ? 'default' : 'destructive',
           onPress: async () => {
-            setIsTogglingStatus(true);
             try {
-              const updated = await updateCommitteeStatus(member._id, newStatus);
-              setMember(updated);
+              await updateStatusMutation.mutateAsync(newStatus);
               showSuccess('Member Updated', `Committee member account has been ${newStatus ? 'activated' : 'deactivated'}.`);
             } catch (err: any) {
               showError('Update Failed', err.message || 'Failed to update member status.');
-            } finally {
-              setIsTogglingStatus(false);
             }
           },
         },
@@ -131,14 +106,13 @@ export const CommitteeDetailsScreen: React.FC = () => {
 
   if (isLoading && !isRefreshing) {
     return (
-      <ScreenWrapper style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Loading member record...</Text>
+      <ScreenWrapper style={styles.container}>
+        <DetailsSkeleton />
       </ScreenWrapper>
     );
   }
 
-  if (errorMessage || !member) {
+  if (error || !member) {
     return (
       <ScreenWrapper style={styles.centerContainer}>
         <Ionicons name="alert-circle-outline" size={48} color={theme.colors.danger} />
@@ -146,7 +120,7 @@ export const CommitteeDetailsScreen: React.FC = () => {
           Member Not Found
         </Text>
         <Text variant="caption" style={styles.errorSubtitle}>
-          {errorMessage || 'Unable to retrieve member record.'}
+          {(error as any)?.message || 'Unable to retrieve member record.'}
         </Text>
         <Button
           title="Back to Committee List"
@@ -165,7 +139,7 @@ export const CommitteeDetailsScreen: React.FC = () => {
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={() => fetchDetails(true)}
+            onRefresh={() => refetch()}
             colors={[theme.colors.primary]}
           />
         }

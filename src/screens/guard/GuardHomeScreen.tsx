@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
 import { Text } from '../../components/common/Text';
@@ -16,49 +15,33 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { theme } from '../../theme';
 import { Guard } from '../../types/guard';
-import { getMyGuardProfile } from '../../services/guardService';
-import { getGuardDashboard } from '../../services/dashboardService';
-import { getUnreadCount } from '../../services/notificationService';
 import { GuardStackParamList } from '../../types/navigation';
-import { ConfirmModal } from '../../components/common/ConfirmModal';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import { useCallback } from 'react';
+import { useMyGuardProfileQuery } from '../../hooks/queries/useGuards';
+import { useGuardDashboardQuery } from '../../hooks/queries/useDashboard';
+import { DashboardSkeleton } from '../../components/skeletons/DashboardSkeleton';
 
 type NavigationProp = NativeStackNavigationProp<GuardStackParamList, 'GuardHome'>;
 
 export const GuardHomeScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { showInfo } = useToast();
-  const [profile, setProfile] = useState<Guard | null>(null);
-  const [dutyStatus, setDutyStatus] = useState<any | null>(null);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
 
-  const loadGuardProfile = async () => {
-    try {
-      const [profData, dashData, uCount] = await Promise.all([
-        getMyGuardProfile().catch(() => null),
-        getGuardDashboard().catch(() => null),
-        getUnreadCount().catch(() => 0),
-      ]);
-      setProfile(profData);
-      setUnreadCount(uCount);
-      if (dashData?.todayStatus) {
-        setDutyStatus(dashData.todayStatus);
-      }
-    } catch (err: any) {
-      // Fallback gracefully
-    } finally {
-      setIsLoading(false);
-    }
+  const { data: profileRaw, refetch: refetchProfile } = useMyGuardProfileQuery();
+  const { data: guardDash, isLoading, refetch: refetchDash } = useGuardDashboardQuery();
+
+  const profile = profileRaw as Guard | null;
+  const dutyStatus = guardDash?.todayStatus;
+
+  const handleRefresh = () => {
+    refetchProfile();
+    refetchDash();
   };
 
   useFocusEffect(
     useCallback(() => {
-      loadGuardProfile();
+      handleRefresh();
     }, [])
   );
 
@@ -76,24 +59,13 @@ export const GuardHomeScreen: React.FC = () => {
     return null;
   };
 
-  const handlePlaceholderPress = (featureName: string) => {
-    showInfo(
-      `${featureName} (Coming Soon)`,
-      `The ${featureName} module is part of a future system update.`
-    );
-  };
-
   return (
     <ScreenWrapper style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header Guard Profile Card */}
         <Card variant="elevated" style={styles.card}>
           <View style={styles.headerTop}>
-            <TouchableOpacity
-              style={styles.userInfoRow}
-              onPress={() => navigation.navigate('Profile')}
-              activeOpacity={0.8}
-            >
+            <View style={styles.userInfoRow}>
               <View style={styles.avatarContainer}>
                 <Ionicons name="shield-checkmark" size={24} color="#FFFFFF" />
               </View>
@@ -105,47 +77,21 @@ export const GuardHomeScreen: React.FC = () => {
                   <Text style={styles.roleBadgeText}>DUTY GUARD TERMINAL</Text>
                 </View>
               </View>
-            </TouchableOpacity>
-
-            <View style={styles.headerActions}>
-              <TouchableOpacity
-                style={styles.actionIconBtn}
-                onPress={() => navigation.navigate('Notifications')}
-                activeOpacity={0.7}
-                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-              >
-                <Ionicons name="notifications-outline" size={20} color={theme.colors.primary} />
-                {unreadCount > 0 && (
-                  <View style={styles.bellBadge}>
-                    <Text style={styles.bellBadgeText}>
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.actionIconBtn}
-                onPress={() => setShowLogoutModal(true)}
-                activeOpacity={0.7}
-                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
-              >
-                <Ionicons name="log-out-outline" size={20} color={theme.colors.danger} />
-              </TouchableOpacity>
             </View>
           </View>
         </Card>
 
-        {/* Assigned Post Card */}
-        <Card variant="outlined" style={styles.infoCard}>
-          <Text variant="heading" style={styles.sectionTitle}>
-            Assigned Guard Post
-          </Text>
-          <View style={styles.divider} />
+        {isLoading ? (
+          <DashboardSkeleton />
+        ) : (
+          <>
+            {/* Assigned Post Card */}
+            <Card variant="outlined" style={styles.infoCard}>
+              <Text variant="heading" style={styles.sectionTitle}>
+                Assigned Guard Post
+              </Text>
+              <View style={styles.divider} />
 
-          {isLoading ? (
-            <ActivityIndicator color={theme.colors.primary} />
-          ) : (
-            <>
               <View style={styles.infoRow}>
                 <Ionicons name="business" size={22} color={theme.colors.primary} />
                 <View style={styles.infoCol}>
@@ -184,7 +130,7 @@ export const GuardHomeScreen: React.FC = () => {
                       </Text>
                     </View>
                     <Text variant="caption" style={styles.dutySubText}>
-                      Checked in at {dutyStatus?.checkInTime ? new Date(dutyStatus.checkInTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '08:00 AM'}
+                      Checked in at {dutyStatus?.checkIn ? new Date(dutyStatus.checkIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '08:00 AM'}
                     </Text>
                     <Button
                       title="Manage Shift & Attendance"
@@ -217,133 +163,76 @@ export const GuardHomeScreen: React.FC = () => {
                   </View>
                 )}
               </View>
-            </>
-          )}
-        </Card>
+            </Card>
 
+            {/* Duty Operations Section */}
+            <View style={styles.modulesSection}>
+              <Text variant="heading" style={styles.sectionHeaderTitle}>
+                Duty Operations
+              </Text>
 
-        {/* Duty Operations Section */}
-        <View style={styles.modulesSection}>
-          <Text variant="heading" style={styles.sectionHeaderTitle}>
-            Duty Operations
-          </Text>
+              <View style={styles.modulesGrid}>
+                <TouchableOpacity
+                  style={styles.moduleCard}
+                  onPress={() => navigation.navigate('GuardAttendance')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.moduleHeader}>
+                    <Ionicons name="time-outline" size={26} color={theme.colors.primary} />
+                    <View style={styles.activeBadge}>
+                      <Text style={styles.activeBadgeText}>ACTIVE</Text>
+                    </View>
+                  </View>
+                  <Text variant="heading" style={styles.moduleTitle}>
+                    Attendance
+                  </Text>
+                  <Text variant="caption" style={styles.moduleSubtitle}>
+                    Shift check-in & check-out history
+                  </Text>
+                </TouchableOpacity>
 
-          <View style={styles.modulesGrid}>
-            <TouchableOpacity
-              style={styles.moduleCard}
-              onPress={() => navigation.navigate('GuardAttendance')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.moduleHeader}>
-                <Ionicons name="time-outline" size={26} color={theme.colors.primary} />
-                <View style={styles.activeBadge}>
-                  <Text style={styles.activeBadgeText}>ACTIVE</Text>
-                </View>
+                <TouchableOpacity
+                  style={styles.moduleCard}
+                  onPress={() => navigation.navigate('GuardShift')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.moduleHeader}>
+                    <Ionicons name="calendar-outline" size={26} color={theme.colors.primary} />
+                    <View style={styles.activeBadge}>
+                      <Text style={styles.activeBadgeText}>ACTIVE</Text>
+                    </View>
+                  </View>
+                  <Text variant="heading" style={styles.moduleTitle}>
+                    My Shift
+                  </Text>
+                  <Text variant="caption" style={styles.moduleSubtitle}>
+                    View roster & duty hours
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.moduleCard}
+                  onPress={() => navigation.navigate('GuardEntryExit')}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.moduleHeader}>
+                    <Ionicons name="log-in-outline" size={26} color={theme.colors.primary} />
+                    <View style={styles.activeBadge}>
+                      <Text style={styles.activeBadgeText}>ACTIVE</Text>
+                    </View>
+                  </View>
+                  <Text variant="heading" style={styles.moduleTitle}>
+                    Entry / Exit
+                  </Text>
+                  <Text variant="caption" style={styles.moduleSubtitle}>
+                    Log visitor & vehicle entries
+                  </Text>
+                </TouchableOpacity>
               </View>
-              <Text variant="heading" style={styles.moduleTitle}>
-                Attendance
-              </Text>
-              <Text variant="caption" style={styles.moduleSubtitle}>
-                Shift check-in & check-out history
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.moduleCard}
-              onPress={() => navigation.navigate('GuardShift')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.moduleHeader}>
-                <Ionicons name="calendar-outline" size={26} color={theme.colors.primary} />
-                <View style={styles.activeBadge}>
-                  <Text style={styles.activeBadgeText}>ACTIVE</Text>
-                </View>
-              </View>
-              <Text variant="heading" style={styles.moduleTitle}>
-                My Shift
-              </Text>
-              <Text variant="caption" style={styles.moduleSubtitle}>
-                View roster & duty hours
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.moduleCard}
-              onPress={() => navigation.navigate('GuardEntryExit')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.moduleHeader}>
-                <Ionicons name="log-in-outline" size={26} color={theme.colors.primary} />
-                <View style={styles.activeBadge}>
-                  <Text style={styles.activeBadgeText}>ACTIVE</Text>
-                </View>
-              </View>
-              <Text variant="heading" style={styles.moduleTitle}>
-                Entry / Exit
-              </Text>
-              <Text variant="caption" style={styles.moduleSubtitle}>
-                Log visitor & vehicle entries
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.moduleCard}
-              onPress={() => navigation.navigate('Notifications')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.moduleHeader}>
-                <Ionicons name="notifications-outline" size={26} color={theme.colors.primary} />
-                <View style={styles.activeBadge}>
-                  <Text style={styles.activeBadgeText}>ACTIVE</Text>
-                </View>
-              </View>
-              <Text variant="heading" style={styles.moduleTitle}>
-                Notifications & Alerts
-              </Text>
-              <Text variant="caption" style={styles.moduleSubtitle}>
-                Duty alerts & security notifications
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.moduleCard}
-              onPress={() => navigation.navigate('Profile')}
-              activeOpacity={0.7}
-            >
-              <View style={styles.moduleHeader}>
-                <Ionicons name="person-outline" size={26} color={theme.colors.primary} />
-                <View style={styles.activeBadge}>
-                  <Text style={styles.activeBadgeText}>ACTIVE</Text>
-                </View>
-              </View>
-              <Text variant="heading" style={styles.moduleTitle}>
-                My Profile
-              </Text>
-              <Text variant="caption" style={styles.moduleSubtitle}>
-                Personal details & security password
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <Button
-          title="Sign Out of Terminal"
-          variant="outline"
-          onPress={() => setShowLogoutModal(true)}
-          style={styles.logoutButton}
-        />
+            </View>
+          </>
+        )}
       </ScrollView>
-
-      <ConfirmModal
-        visible={showLogoutModal}
-        onClose={() => setShowLogoutModal(false)}
-        onConfirm={() => {
-          setShowLogoutModal(false);
-          logout();
-        }}
-        title="Sign Out of Guard Terminal"
-        message="Are you sure you want to sign out? You will need to log back in to perform guard duty operations."
-      />
     </ScreenWrapper>
   );
 };
@@ -439,10 +328,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     includeFontPadding: false,
   },
-  logoutBtn: {
-    padding: theme.spacing.xs,
-    marginLeft: theme.spacing.sm,
-  },
   infoCard: {
     padding: theme.spacing.lg,
   },
@@ -506,17 +391,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#065F46',
   },
-  comingSoonBadge: {
-    backgroundColor: theme.colors.infoLight,
-    paddingHorizontal: theme.spacing.xs,
-    paddingVertical: 2,
-    borderRadius: theme.borderRadius.sm,
-  },
-  comingSoonText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: theme.colors.primaryDark,
-  },
   moduleTitle: {
     fontWeight: '700',
     color: theme.colors.textPrimary,
@@ -527,27 +401,6 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     marginTop: theme.spacing.md,
-  },
-  statusRowContainer: {
-    marginTop: theme.spacing.xs,
-    paddingTop: theme.spacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.surfaceBorder,
-  },
-  dutyStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.xs,
-    alignSelf: 'flex-start',
-    backgroundColor: theme.colors.surfaceHover,
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: 4,
-    borderRadius: theme.borderRadius.sm,
-  },
-  dutyStatusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: theme.colors.textPrimary,
   },
   dutyCardBanner: {
     marginTop: theme.spacing.md,
@@ -594,4 +447,3 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.xs,
   },
 });
-

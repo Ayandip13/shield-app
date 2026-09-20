@@ -15,101 +15,45 @@ import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { theme } from '../../theme';
 import { Notification, NotificationType } from '../../types/notification';
+import { useNotificationsQuery } from '../../hooks/queries/useNotifications';
 import {
-  getNotifications,
-  markAsRead,
-  markAllAsRead,
-} from '../../services/notificationService';
+  useMarkNotificationAsReadMutation,
+  useMarkAllNotificationsAsReadMutation,
+} from '../../hooks/mutations/useNotificationMutations';
+import { ListSkeleton } from '../../components/skeletons/ListSkeleton';
 
 export const NotificationsScreen: React.FC = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [page, setPage] = useState<number>(1);
-  const [totalPages, setTotalPages] = useState<number>(1);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
 
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
-  const [isMarkingAll, setIsMarkingAll] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const {
+    data: notifResult,
+    isLoading,
+    isRefetching: isRefreshing,
+    error: errorMessage,
+    refetch,
+  } = useNotificationsQuery(page);
 
-  const fetchNotifications = async (targetPage = 1, isPullToRefresh = false) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else if (targetPage === 1) {
-      setIsLoading(true);
-    } else {
-      setIsLoadingMore(true);
-    }
-    setErrorMessage(null);
+  const markReadMutation = useMarkNotificationAsReadMutation();
+  const markAllReadMutation = useMarkAllNotificationsAsReadMutation();
 
-    try {
-      const data = await getNotifications(targetPage, 20);
-      if (targetPage === 1) {
-        setNotifications(data.notifications);
-      } else {
-        setNotifications((prev) => [...prev, ...data.notifications]);
-      }
-      setPage(data.pagination.page);
-      setTotalPages(data.pagination.totalPages);
-      setUnreadCount(data.unreadCount);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to load notifications.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-      setIsLoadingMore(false);
-    }
-  };
+  const notifications = notifResult?.notifications || [];
+  const unreadCount = notifResult?.unreadCount || 0;
+  const isMarkingAll = markAllReadMutation.isPending;
 
   useFocusEffect(
     useCallback(() => {
-      fetchNotifications(1);
+      refetch();
     }, [])
   );
 
   const handleMarkAsRead = async (notification: Notification) => {
     if (notification.isRead) return;
-
-    // Optimistic update
-    setNotifications((prev) =>
-      prev.map((item) =>
-        item._id === notification._id ? { ...item, isRead: true } : item
-      )
-    );
-    setUnreadCount((prev) => Math.max(0, prev - 1));
-
-    try {
-      await markAsRead(notification._id);
-    } catch (error) {
-      // Revert if error
-      setNotifications((prev) =>
-        prev.map((item) =>
-          item._id === notification._id ? { ...item, isRead: false } : item
-        )
-      );
-      setUnreadCount((prev) => prev + 1);
-    }
+    markReadMutation.mutate(notification._id);
   };
 
   const handleMarkAllAsRead = async () => {
     if (unreadCount === 0 || isMarkingAll) return;
-
-    setIsMarkingAll(true);
-    // Optimistic update
-    setNotifications((prev) => prev.map((item) => ({ ...item, isRead: true })));
-    const originalUnread = unreadCount;
-    setUnreadCount(0);
-
-    try {
-      await markAllAsRead();
-    } catch (error) {
-      // Revert if error
-      setNotifications((prev) => prev.map((item) => ({ ...item, isRead: false })));
-      setUnreadCount(originalUnread);
-    } finally {
-      setIsMarkingAll(false);
-    }
+    markAllReadMutation.mutate();
   };
 
   const formatTime = (dateString: string) => {
@@ -251,19 +195,11 @@ export const NotificationsScreen: React.FC = () => {
     </View>
   );
 
-  const renderFooter = () => {
-    if (!isLoadingMore) return null;
-    return (
-      <View style={styles.loadingMoreContainer}>
-        <ActivityIndicator size="small" color={theme.colors.primary} />
-      </View>
-    );
-  };
-
   const renderEmpty = () => {
     if (isLoading && !isRefreshing) return null;
 
     if (errorMessage) {
+      const errStr = errorMessage instanceof Error ? errorMessage.message : String(errorMessage);
       return (
         <Card variant="outlined" style={styles.errorCard}>
           <Ionicons name="alert-circle-outline" size={36} color={theme.colors.danger} />
@@ -271,13 +207,13 @@ export const NotificationsScreen: React.FC = () => {
             Failed to Load Notifications
           </Text>
           <Text variant="caption" style={styles.errorSubtitle}>
-            {errorMessage}
+            {errStr}
           </Text>
           <Button
             title="Try Again"
             variant="outline"
             size="sm"
-            onPress={() => fetchNotifications(1)}
+            onPress={() => refetch()}
             style={styles.retryButton}
           />
         </Card>
@@ -306,10 +242,7 @@ export const NotificationsScreen: React.FC = () => {
   return (
     <ScreenWrapper style={styles.container}>
       {isLoading && !isRefreshing ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Loading Notifications...</Text>
-        </View>
+        <ListSkeleton count={5} hasSearch={false} />
       ) : (
         <FlatList
           data={notifications}
@@ -317,22 +250,15 @@ export const NotificationsScreen: React.FC = () => {
           renderItem={renderNotificationItem}
           ListHeaderComponent={renderHeader}
           ListEmptyComponent={renderEmpty}
-          ListFooterComponent={renderFooter}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
-              onRefresh={() => fetchNotifications(1, true)}
+              onRefresh={() => refetch()}
               colors={[theme.colors.primary]}
             />
           }
-          onEndReached={() => {
-            if (page < totalPages && !isLoadingMore && !isLoading) {
-              fetchNotifications(page + 1);
-            }
-          }}
-          onEndReachedThreshold={0.3}
         />
       )}
     </ScreenWrapper>

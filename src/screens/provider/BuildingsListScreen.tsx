@@ -4,7 +4,6 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -16,44 +15,31 @@ import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { theme } from '../../theme';
 import { Building } from '../../types/building';
-import { getBuildings } from '../../services/buildingService';
 import { ProviderStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
+import { useBuildingsQuery } from '../../hooks/queries/useBuildings';
+import { ListSkeleton } from '../../components/skeletons/ListSkeleton';
 
 type NavigationProp = NativeStackNavigationProp<ProviderStackParamList, 'BuildingsList'>;
 
 export const BuildingsListScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const [buildings, setBuildings] = useState<Building[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const fetchBuildingsData = async (isPullToRefresh = false) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMessage(null);
-
-    try {
-      const data = await getBuildings();
-      setBuildings(data);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to fetch buildings list.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
+  const {
+    data: buildings = [],
+    isLoading,
+    isRefetching: isRefreshing,
+    error,
+    refetch,
+  } = useBuildingsQuery();
 
   useFocusEffect(
     useCallback(() => {
-      fetchBuildingsData();
+      refetch();
     }, [])
   );
+
 
   const filteredBuildings = buildings.filter((b) => {
     const q = searchQuery.toLowerCase().trim();
@@ -138,24 +124,21 @@ export const BuildingsListScreen: React.FC = () => {
 
       {/* Main Content List / States */}
       {isLoading && !isRefreshing ? (
-        <View style={styles.centerState}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.stateText}>Loading building directory...</Text>
-        </View>
-      ) : errorMessage ? (
+        <ListSkeleton count={4} hasSearch={false} />
+      ) : error ? (
         <View style={styles.centerState}>
           <Ionicons name="alert-circle-outline" size={44} color={theme.colors.danger} />
           <Text variant="heading" style={styles.errorTitle}>
             Failed to Load Buildings
           </Text>
           <Text variant="caption" style={styles.errorSubtitle}>
-            {errorMessage}
+            {(error as any)?.message || 'Failed to fetch buildings list.'}
           </Text>
           <Button
             title="Retry"
             variant="outline"
             size="sm"
-            onPress={() => fetchBuildingsData()}
+            onPress={() => refetch()}
             style={styles.retryBtn}
           />
         </View>
@@ -189,7 +172,7 @@ export const BuildingsListScreen: React.FC = () => {
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
-              onRefresh={() => fetchBuildingsData(true)}
+              onRefresh={() => refetch()}
               colors={[theme.colors.primary]}
             />
           }

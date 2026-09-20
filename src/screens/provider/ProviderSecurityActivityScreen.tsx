@@ -4,21 +4,21 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
 import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
+import { Button } from '../../components/common/Button';
 import { theme } from '../../theme';
 import { ActivityItem } from '../../types/dashboard';
-import { Building } from '../../types/building';
-import { getSecurityActivity } from '../../services/dashboardService';
-import { getBuildings } from '../../services/buildingService';
 import { formatRelativeDateTime } from '../../utils/dateFormatter';
 import { ProviderStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
+import { useBuildingsQuery } from '../../hooks/queries/useBuildings';
+import { useSecurityActivityQuery } from '../../hooks/queries/useDashboard';
+import { ListSkeleton } from '../../components/skeletons/ListSkeleton';
 
 type RouteProps = RouteProp<ProviderStackParamList, 'ProviderSecurityActivity'>;
 
@@ -29,44 +29,19 @@ export const ProviderSecurityActivityScreen: React.FC = () => {
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | undefined>(
     initialBuildingId
   );
-  const [buildings, setBuildings] = useState<Building[]>([]);
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const loadBuildings = async () => {
-    try {
-      const data = await getBuildings();
-      setBuildings(data);
-    } catch (err) {
-      // Ignore building load error gracefully
-    }
-  };
-
-  const fetchActivities = async (isPullToRefresh = false) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMessage(null);
-
-    try {
-      const data = await getSecurityActivity(selectedBuildingId, 50);
-      setActivities(data);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to load security activity logs.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
+  const { data: buildings = [] } = useBuildingsQuery();
+  const {
+    data: activities = [],
+    isLoading,
+    isRefetching: isRefreshing,
+    error,
+    refetch,
+  } = useSecurityActivityQuery(selectedBuildingId, 50);
 
   useFocusEffect(
     useCallback(() => {
-      loadBuildings();
-      fetchActivities();
+      refetch();
     }, [selectedBuildingId])
   );
 
@@ -152,17 +127,14 @@ export const ProviderSecurityActivityScreen: React.FC = () => {
 
       {/* Main List Area */}
       {isLoading && !isRefreshing ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={styles.loadingText}>Loading Activity Feed...</Text>
+        <View style={{ padding: theme.spacing.lg }}>
+          <ListSkeleton count={6} hasSearch={false} />
         </View>
-      ) : errorMessage ? (
+      ) : error ? (
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={40} color={theme.colors.danger} />
-          <Text style={styles.errorText}>{errorMessage}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={() => fetchActivities()}>
-            <Text style={styles.retryBtnText}>Retry</Text>
-          </TouchableOpacity>
+          <Text style={styles.errorText}>{(error as any)?.message || 'Failed to load security activity logs.'}</Text>
+          <Button title="Retry" variant="outline" size="sm" onPress={() => refetch()} style={{ marginTop: 12 }} />
         </View>
       ) : (
         <FlatList
@@ -174,7 +146,7 @@ export const ProviderSecurityActivityScreen: React.FC = () => {
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
-              onRefresh={() => fetchActivities(true)}
+              onRefresh={() => refetch()}
               colors={[theme.colors.primary]}
             />
           }
@@ -299,7 +271,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: theme.colors.infoLight,
+    backgroundColor: theme.colors.primaryLight,
     paddingHorizontal: theme.spacing.xs,
     paddingVertical: 2,
     borderRadius: theme.borderRadius.sm,
@@ -322,32 +294,18 @@ const styles = StyleSheet.create({
   },
   centerContainer: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     padding: theme.spacing.xl,
   },
-  loadingText: {
-    marginTop: theme.spacing.md,
-    color: theme.colors.textSecondary,
-  },
   errorText: {
-    marginTop: theme.spacing.sm,
     color: theme.colors.danger,
+    marginTop: theme.spacing.sm,
     textAlign: 'center',
-  },
-  retryBtn: {
-    marginTop: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.md,
-  },
-  retryBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
   },
   emptyContainer: {
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: theme.spacing.xl * 2,
   },
   emptyTitle: {
@@ -357,6 +315,6 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     color: theme.colors.textSecondary,
     textAlign: 'center',
-    marginTop: 2,
+    marginTop: 4,
   },
 });

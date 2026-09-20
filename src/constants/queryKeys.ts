@@ -1,0 +1,66 @@
+export const queryKeys = {
+  auth: {
+    root: ['auth'] as const,
+    me: ['auth', 'me'] as const,
+  },
+  dashboard: {
+    root: ['dashboard'] as const,
+    summary: (buildingId?: string) => ['dashboard', 'summary', buildingId || 'all'] as const,
+    provider: (buildingId?: string) => ['dashboard', 'provider', buildingId || 'all'] as const,
+    committee: ['dashboard', 'committee'] as const,
+    guard: () => ['dashboard', 'guard'] as const,
+    activity: (buildingId?: string, limit?: number) => ['dashboard', 'activity', buildingId || 'all', limit || 20] as const,
+  },
+  buildings: {
+    root: ['buildings'] as const,
+    all: () => ['buildings'] as const,
+    list: (params?: any) => ['buildings', 'list', params || {}] as const,
+    detail: (id: string) => ['buildings', 'detail', id] as const,
+  },
+  guards: {
+    root: ['guards'] as const,
+    all: () => ['guards'] as const,
+    list: (params?: any) => ['guards', 'list', params || {}] as const,
+    detail: (id: string) => ['guards', 'detail', id] as const,
+    me: () => ['guards', 'me'] as const,
+  },
+  committee: {
+    root: ['committee'] as const,
+    all: () => ['committee'] as const,
+    list: (params?: any) => ['committee', 'list', params || {}] as const,
+    detail: (id: string) => ['committee', 'detail', id] as const,
+    me: () => ['committee', 'me'] as const,
+  },
+  attendance: {
+    root: ['attendance'] as const,
+    provider: (params?: any) => ['attendance', 'provider', params || {}] as const,
+    committee: (params?: any) => ['attendance', 'committee', params || {}] as const,
+    guard: (params?: any) => ['attendance', 'guard', params || {}] as const,
+    meToday: () => ['attendance', 'meToday'] as const,
+    meHistory: (from?: string, to?: string) => ['attendance', 'meHistory', from || '', to || ''] as const,
+  },
+  entryLogs: {
+    root: ['entry-logs'] as const,
+    provider: (params?: any) => ['entry-logs', 'provider', params || {}] as const,
+    committee: (params?: any) => ['entry-logs', 'committee', params || {}] as const,
+    guard: (params?: any) => ['entry-logs', 'guard', params || {}] as const,
+    active: (params?: any) => ['entry-logs', 'active', params || {}] as const,
+    history: (params?: any) => ['entry-logs', 'history', params || {}] as const,
+    detail: (id: string) => ['entry-logs', 'detail', id] as const,
+  },
+  notifications: {
+    root: ['notifications'] as const,
+    all: () => ['notifications'] as const,
+    list: (page?: number, limit?: number) => ['notifications', 'list', page || 1, limit || 20] as const,
+    unreadCount: () => ['notifications', 'unread-count'] as const,
+  },
+  profile: {
+    root: ['profile'] as const,
+    me: () => ['profile', 'me'] as const,
+  },
+  shifts: {
+    root: ['shifts'] as const,
+    guard: (guardId?: string) => ['shifts', 'guard', guardId || 'me'] as const,
+    byGuard: (guardId?: string) => ['shifts', 'byGuard', guardId || 'me'] as const,
+  },
+};

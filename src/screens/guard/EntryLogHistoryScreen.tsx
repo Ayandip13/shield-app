@@ -4,7 +4,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -13,51 +12,33 @@ import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
 import { theme } from '../../theme';
 import { EntryLog, PersonType } from '../../types/entryLog';
-import { getEntryLogs } from '../../services/entryLogService';
 import { GuardNavigationProp } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
+import { useEntryLogsQuery } from '../../hooks/queries/useEntryLogs';
+import { ListSkeleton } from '../../components/skeletons/ListSkeleton';
 
 export const EntryLogHistoryScreen: React.FC = () => {
   const navigation = useNavigation<GuardNavigationProp<'EntryLogHistory'>>();
-
-  const [logs, setLogs] = useState<EntryLog[]>([]);
   const [selectedType, setSelectedType] = useState<PersonType | 'ALL'>('ALL');
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const fetchLogs = async (typeFilter?: PersonType | 'ALL', isPullToRefresh = false) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMsg(null);
-
-    const activeType = typeFilter !== undefined ? typeFilter : selectedType;
-
-    try {
-      const data = await getEntryLogs({
-        personType: activeType !== 'ALL' ? activeType : undefined,
-      });
-      setLogs(data);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to fetch entry log history.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
+  const {
+    data: logs = [],
+    isLoading,
+    isRefetching: isRefreshing,
+    error: errorMsg,
+    refetch,
+  } = useEntryLogsQuery({
+    personType: selectedType !== 'ALL' ? selectedType : undefined,
+  });
 
   useFocusEffect(
     useCallback(() => {
-      fetchLogs();
+      refetch();
     }, [selectedType])
   );
 
   const handleTypeChange = (type: PersonType | 'ALL') => {
     setSelectedType(type);
-    fetchLogs(type);
   };
 
   const formatDateTime = (isoString?: string | null) => {
@@ -93,15 +74,15 @@ export const EntryLogHistoryScreen: React.FC = () => {
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={() => fetchLogs(undefined, true)}
+            onRefresh={() => refetch()}
             colors={[theme.colors.primary]}
           />
         }
       >
-        {/* Person Type Filter Row */}
+        {/* Filter Section */}
         <View style={styles.filterSection}>
           <Text variant="caption" style={styles.filterLabel}>
-            FILTER BY TYPE
+            FILTER BY PERSON TYPE
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
             {(['ALL', 'visitor', 'delivery', 'staff', 'other'] as const).map((t) => (
@@ -129,17 +110,14 @@ export const EntryLogHistoryScreen: React.FC = () => {
 
         {/* List Content Area */}
         {isLoading && !isRefreshing ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.loadingText}>Fetching access history...</Text>
-          </View>
+          <ListSkeleton count={4} hasSearch={false} />
         ) : errorMsg ? (
           <Card variant="outlined" style={styles.errorCard}>
             <Ionicons name="alert-circle-outline" size={36} color={theme.colors.danger} />
             <Text variant="heading" style={styles.errorTitle}>
               Unable to Load Logs
             </Text>
-            <Text variant="caption" style={styles.errorSub}>{errorMsg}</Text>
+            <Text variant="caption" style={styles.errorSub}>{(errorMsg as any)?.message || 'Failed to fetch entry log history.'}</Text>
           </Card>
         ) : logs.length === 0 ? (
           <Card variant="outlined" style={styles.emptyCard}>

@@ -1,50 +1,34 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenWrapper } from '../../components/common/ScreenWrapper';
 import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
+import { Button } from '../../components/common/Button';
 import { theme } from '../../theme';
 import { ActivityItem } from '../../types/dashboard';
-import { getSecurityActivity } from '../../services/dashboardService';
 import { formatRelativeDateTime } from '../../utils/dateFormatter';
 import { Ionicons } from '@expo/vector-icons';
+import { useSecurityActivityQuery } from '../../hooks/queries/useDashboard';
+import { ListSkeleton } from '../../components/skeletons/ListSkeleton';
 
 export const CommitteeSecurityActivityScreen: React.FC = () => {
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const fetchActivities = async (isPullToRefresh = false) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMessage(null);
-
-    try {
-      const data = await getSecurityActivity(undefined, 50);
-      setActivities(data);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to load building security activities.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
+  const {
+    data: activities = [],
+    isLoading,
+    isRefetching: isRefreshing,
+    error,
+    refetch,
+  } = useSecurityActivityQuery(undefined, 50);
 
   useFocusEffect(
     useCallback(() => {
-      fetchActivities();
+      refetch();
     }, [])
   );
 
@@ -103,17 +87,14 @@ export const CommitteeSecurityActivityScreen: React.FC = () => {
       </View>
 
       {isLoading && !isRefreshing ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={theme.colors.committee} />
-          <Text style={styles.loadingText}>Loading Security Log...</Text>
+        <View style={{ padding: theme.spacing.lg }}>
+          <ListSkeleton count={6} hasSearch={false} />
         </View>
-      ) : errorMessage ? (
+      ) : error ? (
         <View style={styles.centerContainer}>
           <Ionicons name="alert-circle-outline" size={40} color={theme.colors.danger} />
-          <Text style={styles.errorText}>{errorMessage}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={() => fetchActivities()}>
-            <Text style={styles.retryBtnText}>Retry</Text>
-          </TouchableOpacity>
+          <Text style={styles.errorText}>{(error as any)?.message || 'Failed to load building security activities.'}</Text>
+          <Button title="Retry" variant="outline" size="sm" onPress={() => refetch()} style={{ marginTop: 12 }} />
         </View>
       ) : (
         <FlatList
@@ -125,7 +106,7 @@ export const CommitteeSecurityActivityScreen: React.FC = () => {
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
-              onRefresh={() => fetchActivities(true)}
+              onRefresh={() => refetch()}
               colors={[theme.colors.committee]}
             />
           }
@@ -248,32 +229,18 @@ const styles = StyleSheet.create({
   },
   centerContainer: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     padding: theme.spacing.xl,
   },
-  loadingText: {
-    marginTop: theme.spacing.md,
-    color: theme.colors.textSecondary,
-  },
   errorText: {
-    marginTop: theme.spacing.sm,
     color: theme.colors.danger,
+    marginTop: theme.spacing.sm,
     textAlign: 'center',
-  },
-  retryBtn: {
-    marginTop: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.committee,
-    borderRadius: theme.borderRadius.md,
-  },
-  retryBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
   },
   emptyContainer: {
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: theme.spacing.xl * 2,
   },
   emptyTitle: {
@@ -283,6 +250,6 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     color: theme.colors.textSecondary,
     textAlign: 'center',
-    marginTop: 2,
+    marginTop: 4,
   },
 });

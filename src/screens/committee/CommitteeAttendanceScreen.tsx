@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -13,43 +12,32 @@ import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { theme } from '../../theme';
 import { AttendanceRecord } from '../../types/attendance';
-import { getCommitteeAttendance } from '../../services/attendanceService';
-import { getMyCommitteeProfile } from '../../services/committeeService';
 import { CommitteeMember } from '../../types/committee';
 import { Ionicons } from '@expo/vector-icons';
+import { useMyCommitteeProfileQuery } from '../../hooks/queries/useCommittee';
+import { useCommitteeAttendanceQuery } from '../../hooks/queries/useAttendance';
+import { ListSkeleton } from '../../components/skeletons/ListSkeleton';
 
 export const CommitteeAttendanceScreen: React.FC = () => {
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [profile, setProfile] = useState<CommitteeMember | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { data: profileRaw, refetch: refetchProfile } = useMyCommitteeProfileQuery();
+  const {
+    data: records = [],
+    isLoading,
+    isRefetching: isRefreshing,
+    error: errorMsg,
+    refetch: refetchAttendance,
+  } = useCommitteeAttendanceQuery();
 
-  const loadData = async (isPullToRefresh = false) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMsg(null);
+  const profile = profileRaw as CommitteeMember | null;
 
-    try {
-      const committeeProfile = await getMyCommitteeProfile();
-      setProfile(committeeProfile);
-
-      const attendanceLogs = await getCommitteeAttendance();
-      setRecords(attendanceLogs);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Unable to load building attendance records.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
+  const handleRefresh = () => {
+    refetchProfile();
+    refetchAttendance();
   };
 
   useFocusEffect(
     useCallback(() => {
-      loadData();
+      handleRefresh();
     }, [])
   );
 
@@ -84,10 +72,11 @@ export const CommitteeAttendanceScreen: React.FC = () => {
   };
 
   const getBuildingName = () => {
-    if (profile && typeof profile.buildingId === 'object' && profile.buildingId) {
+    if (!profile || !profile.buildingId) return 'Building Roster';
+    if (typeof profile.buildingId === 'object' && profile.buildingId.name) {
       return profile.buildingId.name;
     }
-    return 'Represented Building';
+    return 'Building Roster';
   };
 
   return (
@@ -98,7 +87,7 @@ export const CommitteeAttendanceScreen: React.FC = () => {
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={() => loadData(true)}
+            onRefresh={handleRefresh}
             colors={[theme.colors.committee]}
           />
         }
@@ -122,22 +111,19 @@ export const CommitteeAttendanceScreen: React.FC = () => {
 
         {/* Content Section */}
         {isLoading && !isRefreshing ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={theme.colors.committee} />
-            <Text style={styles.loadingText}>Loading building attendance...</Text>
-          </View>
+          <ListSkeleton count={4} hasSearch={false} />
         ) : errorMsg ? (
           <Card variant="outlined" style={styles.errorCard}>
             <Ionicons name="alert-circle-outline" size={36} color={theme.colors.danger} />
             <Text variant="heading" style={styles.errorTitle}>
               Unable to Load Logs
             </Text>
-            <Text variant="caption" style={styles.errorSub}>{errorMsg}</Text>
+            <Text variant="caption" style={styles.errorSub}>{(errorMsg as any)?.message || 'Unable to load building attendance records.'}</Text>
             <Button
               title="Try Again"
               variant="outline"
               size="sm"
-              onPress={() => loadData()}
+              onPress={handleRefresh}
               style={styles.retryBtn}
             />
           </Card>

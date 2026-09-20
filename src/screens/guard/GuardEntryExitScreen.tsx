@@ -1,10 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -16,9 +15,11 @@ import { Button } from '../../components/common/Button';
 import { theme } from '../../theme';
 import { useToast } from '../../context/ToastContext';
 import { EntryLog } from '../../types/entryLog';
-import { getActiveEntryLogs, markEntryLogExit } from '../../services/entryLogService';
 import { GuardStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
+import { useActiveEntryLogsQuery } from '../../hooks/queries/useEntryLogs';
+import { useMarkEntryLogExitMutation } from '../../hooks/mutations/useEntryLogMutations';
+import { ListSkeleton } from '../../components/skeletons/ListSkeleton';
 
 type NavigationProp = NativeStackNavigationProp<GuardStackParamList, 'GuardEntryExit'>;
 
@@ -26,47 +27,28 @@ export const GuardEntryExitScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { showSuccess, showError } = useToast();
 
-  const [activeEntries, setActiveEntries] = useState<EntryLog[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [actionId, setActionId] = useState<string | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const {
+    data: activeEntries = [],
+    isLoading,
+    isRefetching: isRefreshing,
+    error: errorMsg,
+    refetch,
+  } = useActiveEntryLogsQuery();
 
-  const fetchActiveEntries = async (isPullToRefresh = false) => {
-    if (isPullToRefresh) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-    setErrorMsg(null);
-
-    try {
-      const data = await getActiveEntryLogs();
-      setActiveEntries(data);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to fetch active visitor logs.');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
+  const markExitMutation = useMarkEntryLogExitMutation();
 
   useFocusEffect(
     useCallback(() => {
-      fetchActiveEntries();
-    }, [])
+      refetch();
+    }, [refetch])
   );
 
   const handleMarkExit = async (entry: EntryLog) => {
-    setActionId(entry._id);
     try {
-      await markEntryLogExit(entry._id);
+      await markExitMutation.mutateAsync(entry._id);
       showSuccess('Exit Recorded', `${entry.personName} has been marked as exited.`);
-      await fetchActiveEntries();
     } catch (err: any) {
       showError('Action Failed', err.message || 'Unable to record exit.');
-    } finally {
-      setActionId(null);
     }
   };
 
@@ -80,16 +62,16 @@ export const GuardEntryExitScreen: React.FC = () => {
     }
   };
 
-  const getTypeBadgeStyle = (type: string) => {
+  const getTypeBadgeStyle = (type: EntryLog['personType']) => {
     switch (type) {
       case 'visitor':
-        return { bg: theme.colors.infoLight, text: theme.colors.primaryDark, label: 'Visitor' };
+        return { bg: '#EBF3FF', text: '#1877F2', label: 'Visitor' };
       case 'delivery':
         return { bg: '#FEF3C7', text: '#D97706', label: 'Delivery' };
       case 'staff':
-        return { bg: theme.colors.successLight, text: '#065F46', label: 'Staff' };
+        return { bg: '#D1FAE5', text: '#059669', label: 'Staff' };
       default:
-        return { bg: theme.colors.surfaceHover, text: theme.colors.textSecondary, label: 'Other' };
+        return { bg: '#F1F5F9', text: '#64748B', label: 'Other' };
     }
   };
 
@@ -101,25 +83,25 @@ export const GuardEntryExitScreen: React.FC = () => {
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={() => fetchActiveEntries(true)}
+            onRefresh={() => refetch()}
             colors={[theme.colors.primary]}
           />
         }
       >
-        {/* Header Summary & Action Area */}
+        {/* Guard Gate Terminal Action Card */}
         <Card variant="elevated" style={styles.headerCard}>
           <View style={styles.headerTop}>
             <View style={styles.headerTextCol}>
-              <Text variant="caption" style={styles.headerSub}>
-                BUILDING ACCESS CONTROL
-              </Text>
               <Text variant="heading" style={styles.headerTitle}>
-                Entry / Exit Terminal
+                Entry & Exit Access Gate
+              </Text>
+              <Text variant="caption" style={styles.headerSub}>
+                Register incoming visitors or record exits
               </Text>
             </View>
             <View style={styles.activeBadgeBox}>
               <Text style={styles.activeBadgeCount}>{activeEntries.length}</Text>
-              <Text style={styles.activeBadgeLabel}>Inside</Text>
+              <Text style={styles.activeBadgeLabel}>INSIDE</Text>
             </View>
           </View>
 
@@ -151,22 +133,19 @@ export const GuardEntryExitScreen: React.FC = () => {
         </View>
 
         {isLoading && !isRefreshing ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.loadingText}>Fetching active building entries...</Text>
-          </View>
+          <ListSkeleton count={3} hasSearch={false} />
         ) : errorMsg ? (
           <Card variant="outlined" style={styles.errorCard}>
             <Ionicons name="alert-circle-outline" size={36} color={theme.colors.danger} />
             <Text variant="heading" style={styles.errorTitle}>
               Failed to Load Entries
             </Text>
-            <Text variant="caption" style={styles.errorSub}>{errorMsg}</Text>
+            <Text variant="caption" style={styles.errorSub}>{(errorMsg as any)?.message || 'Failed to load visitor logs.'}</Text>
             <Button
               title="Try Again"
               variant="outline"
               size="sm"
-              onPress={() => fetchActiveEntries()}
+              onPress={() => refetch()}
               style={styles.retryBtn}
             />
           </Card>
@@ -191,7 +170,7 @@ export const GuardEntryExitScreen: React.FC = () => {
           <View style={styles.entriesList}>
             {activeEntries.map((item) => {
               const typeStyle = getTypeBadgeStyle(item.personType);
-              const isProcessingThis = actionId === item._id;
+              const isProcessingThis = markExitMutation.isPending && markExitMutation.variables === item._id;
 
               return (
                 <Card key={item._id} variant="elevated" style={styles.entryCard}>
