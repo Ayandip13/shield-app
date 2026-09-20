@@ -257,7 +257,7 @@ export const AddGuardScreen: React.FC = () => {
 
                 <Input
                   label="Monthly Salary (Optional)"
-                  placeholder="e.g. 1500"
+                  placeholder="e.g. 18000"
                   value={monthlySalary}
                   onChangeText={(text) => {
                     setMonthlySalary(text);

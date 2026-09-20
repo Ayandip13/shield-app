@@ -17,6 +17,7 @@ import { Input } from '../../components/common/Input';
 import { theme } from '../../theme';
 import { Guard } from '../../types/guard';
 import { getGuards } from '../../services/guardService';
+import { formatSalary } from '../../utils/currencyFormatter';
 import { ProviderStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -123,6 +124,12 @@ export const GuardsListScreen: React.FC = () => {
             {item.phone ? (
               <Text variant="caption" style={styles.contactText}>
                 📞 {item.phone}
+              </Text>
+            ) : null}
+
+            {item.monthlySalary !== undefined && item.monthlySalary !== null ? (
+              <Text variant="caption" style={styles.salaryText}>
+                Monthly Salary: {formatSalary(item.monthlySalary)}
               </Text>
             ) : null}
           </View>
@@ -291,6 +298,11 @@ const styles = StyleSheet.create({
   },
   contactText: {
     color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
+  salaryText: {
+    color: theme.colors.textPrimary,
+    fontWeight: '600',
     marginTop: 2,
   },
   statusBadge: {

@@ -18,6 +18,7 @@ import { theme } from '../../theme';
 import { useToast } from '../../context/ToastContext';
 import { Guard } from '../../types/guard';
 import { getGuard, updateGuardStatus } from '../../services/guardService';
+import { formatSalary } from '../../utils/currencyFormatter';
 import { ProviderStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -274,11 +275,9 @@ export const GuardDetailsScreen: React.FC = () => {
           <View style={styles.infoRow}>
             <Ionicons name="cash-outline" size={20} color={theme.colors.primary} />
             <View style={styles.infoCol}>
-              <Text variant="caption">Base Monthly Salary</Text>
+              <Text variant="caption">Monthly Salary</Text>
               <Text variant="body" style={styles.infoValText}>
-                {guard.monthlySalary !== undefined && guard.monthlySalary !== null
-                  ? `$${guard.monthlySalary}`
-                  : 'Not specified'}
+                {formatSalary(guard.monthlySalary)}
               </Text>
             </View>
           </View>

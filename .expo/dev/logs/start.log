@@ -470,3 +470,10 @@
 {"_e":"metro:client_log","_t":1789771665943,"level":"error","data":["[ReferenceError: Property 'fontw' doesn't exist]"]}
 {"_e":"metro:client_log","_t":1789771666850,"level":"error","data":["[ReferenceError: Property 'fontWeight' doesn't exist]"]}
 {"_e":"metro:client_log","_t":1789772029644,"level":"warn","data":["SafeAreaView has been deprecated and will be removed in a future release. Please use 'react-native-safe-area-context' instead. See https://github.com/AppAndFlow/react-native-safe-area-context"]}
+{"_e":"root:init","_t":1789839629175,"format":"v0-jsonl","version":"57.0.25"}
+{"_e":"env:mode","_t":1789839629195,"nodeEnv":"development","babelEnv":"development","mode":"development"}
+{"_e":"env:load","_t":1789839629235,"mode":"development","files":["../..\\..\\.env"],"env":{"EXPO_PUBLIC_API_BASE_URL":"http://192.168.0.101:5000/api/v1"}}
+{"_e":"devserver:start","_t":1789839634387,"mode":"development","web":true,"baseUrl":"","asyncRoutes":false,"routerRoot":"../..\\..\\app","serverComponents":false,"serverActions":false,"serverRendering":false,"apiRoutes":false,"exporting":false}
+{"_e":"metro:config","_t":1789839642613,"serverRoot":"../..\\..","projectRoot":"../..\\..","exporting":false,"flags":{"autolinkingModuleResolution":false,"serverActions":false,"serverComponents":false,"reactCompiler":false,"optimizeGraph":false,"treeshaking":false,"logbox":false}}
+{"_e":"expo:dev-tools-plugin:load","_t":1789839647698,"plugins":[]}
+{"_e":"metro:instantiate","_t":1789839691810,"atlas":false,"workers":6,"host":"::","port":8081}

@@ -17,6 +17,7 @@ import { useAuth } from '../../context/AuthContext';
 import { theme } from '../../theme';
 import { UserProfile } from '../../types/profile';
 import { getProfile } from '../../services/profileService';
+import { formatSalary } from '../../utils/currencyFormatter';
 import { Ionicons } from '@expo/vector-icons';
 
 export const ProfileScreen: React.FC = () => {
@@ -236,6 +237,28 @@ export const ProfileScreen: React.FC = () => {
                     </Text>
                     <Text variant="body" style={styles.fieldVal}>
                       {profile.building?.name || 'Unassigned'}
+                    </Text>
+                  </View>
+                  {profile.joiningDate ? (
+                    <View style={styles.infoRow}>
+                      <Text variant="caption" style={styles.fieldLabel}>
+                        Joining Date
+                      </Text>
+                      <Text variant="body" style={styles.fieldVal}>
+                        {new Date(profile.joiningDate).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </Text>
+                    </View>
+                  ) : null}
+                  <View style={styles.infoRow}>
+                    <Text variant="caption" style={styles.fieldLabel}>
+                      Monthly Salary
+                    </Text>
+                    <Text variant="body" style={styles.fieldVal}>
+                      {formatSalary(profile.monthlySalary)}
                     </Text>
                   </View>
                   {profile.building?.address ? (

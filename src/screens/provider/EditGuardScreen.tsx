@@ -293,8 +293,8 @@ export const EditGuardScreen: React.FC = () => {
                 />
 
                 <Input
-                  label="Monthly Base Salary"
-                  placeholder="e.g. 1500"
+                  label="Monthly Salary (Optional)"
+                  placeholder="e.g. 18000"
                   value={monthlySalary}
                   onChangeText={(text) => {
                     setMonthlySalary(text);

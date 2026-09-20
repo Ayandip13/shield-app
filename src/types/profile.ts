@@ -23,6 +23,7 @@ export interface UserProfile {
   employeeId?: string | null;
   designation?: string | null;
   joiningDate?: string | null;
+  monthlySalary?: number | null;
   building?: UserProfileBuilding | null;
   provider?: UserProfileProvider | null;
 }
