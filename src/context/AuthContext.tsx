@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../types/auth';
-import { saveToken, getToken, removeToken } from '../utils/storage';
+import {
+  saveTokens,
+  getAccessToken,
+  getRefreshToken,
+  removeTokens,
+} from '../utils/storage';
 import * as authService from '../services/authService';
 import { setUnauthorizedHandler } from '../services/apiClient';
 
@@ -11,6 +16,7 @@ interface AuthContextType {
   sessionNotice: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  logoutAll: () => Promise<void>;
   updateUser: (updatedFields: Partial<User>) => void;
   clearSessionNotice: () => void;
 }
@@ -24,7 +30,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [sessionNotice, setSessionNotice] = useState<string | null>(null);
 
   const handleSessionExpired = async () => {
-    await removeToken();
+    await removeTokens();
     setToken(null);
     setUser(null);
     setSessionNotice('Your session has expired. Please sign in again.');
@@ -35,15 +41,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     async function loadStoredAuth() {
       try {
-        const storedToken = await getToken();
-        if (storedToken) {
-          setToken(storedToken);
+        const storedAccessToken = await getAccessToken();
+        const storedRefreshToken = await getRefreshToken();
+
+        if (storedAccessToken || storedRefreshToken) {
+          if (storedAccessToken) {
+            setToken(storedAccessToken);
+          }
+          // Fetch user profile; if access token expired, apiClient automatically uses refreshToken
           const currentUser = await authService.fetchCurrentUser();
           setUser(currentUser);
+
+          const updatedAccessToken = await getAccessToken();
+          if (updatedAccessToken) {
+            setToken(updatedAccessToken);
+          }
         }
       } catch (error) {
-        console.warn('Failed to restore session, clearing invalid token:', error);
-        await removeToken();
+        console.warn('Failed to restore session, clearing invalid tokens:', error);
+        await removeTokens();
         setToken(null);
         setUser(null);
         setSessionNotice('Your session has expired. Please sign in again.');
@@ -51,6 +67,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setIsLoading(false);
       }
     }
+
     loadStoredAuth();
   }, []);
 
@@ -59,8 +76,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setSessionNotice(null);
     try {
       const data = await authService.login(email, password);
-      await saveToken(data.token);
-      setToken(data.token);
+      await saveTokens(data.accessToken, data.refreshToken);
+      setToken(data.accessToken);
       setUser(data.user);
     } finally {
       setIsLoading(false);
@@ -71,7 +88,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setIsLoading(true);
     setSessionNotice(null);
     try {
-      await removeToken();
+      const currentRefreshToken = await getRefreshToken();
+      await authService.logoutSession(currentRefreshToken || undefined);
+      await removeTokens();
+      setToken(null);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogoutAll = async (): Promise<void> => {
+    setIsLoading(true);
+    setSessionNotice(null);
+    try {
+      await authService.logoutAllSessions();
+      await removeTokens();
       setToken(null);
       setUser(null);
     } finally {
@@ -96,6 +128,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         sessionNotice,
         login: handleLogin,
         logout: handleLogout,
+        logoutAll: handleLogoutAll,
         updateUser: handleUpdateUser,
         clearSessionNotice,
       }}
@@ -112,4 +145,3 @@ export function useAuth(): AuthContextType {
   }
   return context;
 }
-

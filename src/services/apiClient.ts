@@ -1,8 +1,9 @@
 import Constants from 'expo-constants';
-import { getToken } from '../utils/storage';
-import { ApiAuthResponse } from '../types/auth';
+import { getAccessToken, getRefreshToken, saveTokens, removeTokens } from '../utils/storage';
+import { ApiAuthResponse, RefreshResponse } from '../types/auth';
 
 let onUnauthorizedHandler: (() => void) | null = null;
+let refreshPromise: Promise<RefreshResponse> | null = null;
 
 export function setUnauthorizedHandler(handler: () => void) {
   onUnauthorizedHandler = handler;
@@ -29,11 +30,15 @@ const getBaseUrl = (): string => {
 
 const BASE_URL = getBaseUrl();
 
+export interface CustomRequestOptions extends RequestInit {
+  _isRetry?: boolean;
+}
+
 export async function request<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: CustomRequestOptions = {}
 ): Promise<ApiAuthResponse<T>> {
-  const token = await getToken();
+  const token = await getAccessToken();
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -51,7 +56,9 @@ export async function request<T>(
       headers,
     });
   } catch (error: any) {
-    throw new Error('Unable to connect to the server. Please check your internet connection and try again.');
+    throw new Error(
+      'Unable to connect to the server. Please check your internet connection and try again.'
+    );
   }
 
   let data: ApiAuthResponse<T>;
@@ -61,10 +68,80 @@ export async function request<T>(
     throw new Error('Invalid response format received from server.');
   }
 
+  // Handle HTTP 401 Unauthorized (Expired / Invalid Access Token)
+  if (
+    response.status === 401 &&
+    endpoint !== '/auth/login' &&
+    endpoint !== '/auth/refresh'
+  ) {
+    // Prevent infinite retry loops if request has already been retried once
+    if (!options._isRetry) {
+      try {
+        // SINGLE-FLIGHT REFRESH: If multiple 401s occur simultaneously, share the single refresh promise
+        if (!refreshPromise) {
+          refreshPromise = (async () => {
+            const refreshToken = await getRefreshToken();
+            if (!refreshToken) {
+              throw new Error('No refresh token available');
+            }
+
+            const refreshRes = await fetch(`${BASE_URL}/auth/refresh`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ refreshToken }),
+            });
+
+            const refreshData = await refreshRes.json();
+            if (
+              !refreshRes.ok ||
+              !refreshData.success ||
+              !refreshData.data?.accessToken
+            ) {
+              throw new Error(refreshData.message || 'Session refresh failed');
+            }
+
+            const newTokens: RefreshResponse = refreshData.data;
+            await saveTokens(newTokens.accessToken, newTokens.refreshToken);
+            return newTokens;
+          })().finally(() => {
+            refreshPromise = null;
+          });
+        }
+
+        // Wait for the single-flight refresh operation
+        await refreshPromise;
+
+        // Retry the original request ONCE with the new access token
+        return request<T>(endpoint, {
+          ...options,
+          _isRetry: true,
+        });
+      } catch (refreshErr) {
+        // Refresh failed: clear auth state & trigger unauthorized handler
+        await removeTokens();
+        if (onUnauthorizedHandler) {
+          onUnauthorizedHandler();
+        }
+        throw new Error('Your session has expired. Please sign in again.');
+      }
+    } else {
+      // Retried request failed again with 401: clear tokens & trigger handler
+      await removeTokens();
+      if (onUnauthorizedHandler) {
+        onUnauthorizedHandler();
+      }
+      throw new Error('Your session has expired. Please sign in again.');
+    }
+  }
+
   if (!response.ok || !data.success) {
     let userMessage = data.message;
 
-    if (!userMessage || userMessage.includes('CastError') || userMessage.includes('ValidationError')) {
+    if (
+      !userMessage ||
+      userMessage.includes('CastError') ||
+      userMessage.includes('ValidationError')
+    ) {
       switch (response.status) {
         case 401:
           userMessage = 'Your session has expired. Please sign in again.';
@@ -88,16 +165,8 @@ export async function request<T>(
       }
     }
 
-    if (response.status === 401 && endpoint !== '/auth/login') {
-      if (onUnauthorizedHandler) {
-        onUnauthorizedHandler();
-      }
-    }
-
     throw new Error(userMessage);
   }
 
   return data;
 }
-
-

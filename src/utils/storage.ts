@@ -1,42 +1,77 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
-const TOKEN_KEY = 'secushield_auth_token';
+const ACCESS_TOKEN_KEY = 'secushield_access_token';
+const REFRESH_TOKEN_KEY = 'secushield_refresh_token';
 
-// In-memory fallback for web or un-supported platforms
-let memoryToken: string | null = null;
+// In-memory fallbacks for web or unsupported platforms
+let memoryAccessToken: string | null = null;
+let memoryRefreshToken: string | null = null;
 
-export async function saveToken(token: string): Promise<void> {
+export async function saveTokens(accessToken: string, refreshToken: string): Promise<void> {
   try {
-    memoryToken = token;
+    memoryAccessToken = accessToken;
+    memoryRefreshToken = refreshToken;
     if (Platform.OS !== 'web') {
-      await SecureStore.setItemAsync(TOKEN_KEY, token);
+      await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
+      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
     }
   } catch (error) {
-    console.warn('SecureStore saveToken failed, falling back to memory store:', error);
+    console.warn('SecureStore saveTokens failed, falling back to memory store:', error);
+  }
+}
+
+export async function getAccessToken(): Promise<string | null> {
+  try {
+    if (Platform.OS !== 'web') {
+      const token = await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
+      if (token) return token;
+    }
+    return memoryAccessToken;
+  } catch (error) {
+    console.warn('SecureStore getAccessToken failed, returning memory store:', error);
+    return memoryAccessToken;
+  }
+}
+
+export async function getRefreshToken(): Promise<string | null> {
+  try {
+    if (Platform.OS !== 'web') {
+      const token = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
+      if (token) return token;
+    }
+    return memoryRefreshToken;
+  } catch (error) {
+    console.warn('SecureStore getRefreshToken failed, returning memory store:', error);
+    return memoryRefreshToken;
+  }
+}
+
+export async function removeTokens(): Promise<void> {
+  try {
+    memoryAccessToken = null;
+    memoryRefreshToken = null;
+    if (Platform.OS !== 'web') {
+      await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
+      await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
+    }
+  } catch (error) {
+    console.warn('SecureStore removeTokens failed:', error);
+  }
+}
+
+// Backward compatibility helpers
+export async function saveToken(token: string): Promise<void> {
+  memoryAccessToken = token;
+  if (Platform.OS !== 'web') {
+    await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, token);
   }
 }
 
 export async function getToken(): Promise<string | null> {
-  try {
-    if (Platform.OS !== 'web') {
-      const token = await SecureStore.getItemAsync(TOKEN_KEY);
-      if (token) return token;
-    }
-    return memoryToken;
-  } catch (error) {
-    console.warn('SecureStore getToken failed, returning memory store:', error);
-    return memoryToken;
-  }
+  return getAccessToken();
 }
 
 export async function removeToken(): Promise<void> {
-  try {
-    memoryToken = null;
-    if (Platform.OS !== 'web') {
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
-    }
-  } catch (error) {
-    console.warn('SecureStore removeToken failed:', error);
-  }
+  return removeTokens();
 }
