@@ -5,6 +5,6 @@ export const envConfig = {
     process.env.EXPO_PUBLIC_API_URL ||
     process.env.EXPO_PUBLIC_API_BASE_URL ||
     Constants.expoConfig?.extra?.apiBaseUrl ||
-    'https://shield-api-10yp.onrender.com/api/v1',
+    'https://shield-api-pkfz.onrender.com/api/v1',
 };
 

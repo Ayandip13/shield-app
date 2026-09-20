@@ -25,7 +25,7 @@ const getBaseUrl = (): string => {
     }
   }
 
-  return 'https://shield-api-10yp.onrender.com/api/v1';
+  return 'https://shield-api-pkfz.onrender.com/api/v1';
 };
 
 const BASE_URL = getBaseUrl();
