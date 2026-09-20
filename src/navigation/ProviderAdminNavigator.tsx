@@ -46,7 +46,7 @@ export const ProviderAdminNavigator: React.FC = () => {
       <Stack.Screen
         name="ProviderDashboard"
         component={ProviderDashboardScreen}
-        options={{ title: 'SecuShield - Control Center' }}
+        options={{ title: 'Shield - Control Center' }}
       />
       <Stack.Screen
         name="BuildingsList"

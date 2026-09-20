@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Security Management",
-    "slug": "security-management",
+    "name": "Shield",
+    "slug": "shield",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F4F7FB"
+      "backgroundColor": "#0F172A"
     },
     "ios": {
       "supportsTablet": true
@@ -20,7 +20,7 @@
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#F4F7FB"
+        "backgroundColor": "#0F172A"
       },
       "permissions": [
         "INTERNET"
@@ -31,6 +31,20 @@
     },
     "plugins": [
       "expo-asset"
-    ]
+    ],
+    "updates": {
+      "url": "https://u.expo.dev/b4035609-1933-4f73-9bd0-71f7e4985ec1",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "b4035609-1933-4f73-9bd0-71f7e4985ec1"
+      }
+    },
+    "owner": "ayandip02"
   }
 }

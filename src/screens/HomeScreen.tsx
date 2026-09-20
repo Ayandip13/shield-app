@@ -38,7 +38,7 @@ export const HomeScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
           <Text variant="title" color={theme.colors.primary}>
-            SecuShield
+            Shield
           </Text>
           <Text variant="caption">Building Security Management SaaS</Text>
         </View>

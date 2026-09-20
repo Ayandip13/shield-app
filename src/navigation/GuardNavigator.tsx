@@ -37,7 +37,7 @@ export const GuardNavigator: React.FC = () => {
       <Stack.Screen
         name="GuardHome"
         component={GuardHomeScreen}
-        options={{ title: 'SecuShield - Guard Terminal' }}
+        options={{ title: 'Shield - Guard Terminal' }}
       />
       <Stack.Screen
         name="GuardAttendance"

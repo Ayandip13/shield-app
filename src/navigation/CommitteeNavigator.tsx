@@ -34,7 +34,7 @@ export const CommitteeNavigator: React.FC = () => {
       <Stack.Screen
         name="CommitteeHome"
         component={CommitteeHomeScreen}
-        options={{ title: 'SecuShield - Committee Portal' }}
+        options={{ title: 'Shield - Committee Portal' }}
       />
       <Stack.Screen
         name="CommitteeAttendance"

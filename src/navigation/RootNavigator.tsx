@@ -19,7 +19,7 @@ export const RootNavigator: React.FC = () => {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Initializing SecuShield Session...</Text>
+        <Text style={styles.loadingText}>Initializing Shield Session...</Text>
       </View>
     );
   }
@@ -45,7 +45,7 @@ export const RootNavigator: React.FC = () => {
         <Stack.Screen
           name="Auth"
           component={LoginScreen}
-          options={{ title: 'SecuShield Sign In', headerBackVisible: false }}
+          options={{ title: 'Shield Sign In', headerBackVisible: false }}
         />
       ) : user.role === 'provider_admin' ? (
         // Authenticated Provider Admin Stack

@@ -307,7 +307,7 @@ export const ProviderDashboardScreen: React.FC = () => {
                 <View style={styles.onboardingHeaderRow}>
                   <Ionicons name="sparkles" size={24} color={theme.colors.primary} />
                   <Text variant="heading" style={styles.onboardingTitle}>
-                    Welcome to SecuShield
+                    Welcome to Shield
                   </Text>
                 </View>
                 <Text variant="body" style={styles.onboardingSubtitle}>

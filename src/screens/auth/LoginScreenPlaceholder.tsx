@@ -16,7 +16,7 @@ export const LoginScreenPlaceholder: React.FC = () => {
     <ScreenWrapper style={styles.container}>
       <Card variant="elevated" style={styles.card}>
         <Text variant="title" color={theme.colors.primary} style={styles.title}>
-          SecuShield
+          Shield
         </Text>
         <Text variant="heading" style={styles.subtitle}>
           Authentication Group
