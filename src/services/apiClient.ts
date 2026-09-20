@@ -24,7 +24,7 @@ const getBaseUrl = (): string => {
     }
   }
 
-  return 'http://192.168.0.101:5000/api/v1';
+  return 'https://shield-api-10yp.onrender.com/api/v1';
 };
 
 const BASE_URL = getBaseUrl();

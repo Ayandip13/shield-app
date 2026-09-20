@@ -18,7 +18,7 @@ Configure backend endpoint in `.env`:
 EXPO_PUBLIC_API_URL=http://192.168.1.50:5000/api/v1
 
 # For production builds:
-EXPO_PUBLIC_API_URL=https://api.secushield.com/api/v1
+EXPO_PUBLIC_API_URL=https://shield-api-10yp.onrender.com/api/v1
 ```
 
 > **Security Note**: Never include database credentials, JWT secrets, or backend private keys in the mobile application project.
