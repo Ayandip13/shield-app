@@ -55,25 +55,10 @@ export const LoginScreen: React.FC = () => {
     }
   };
 
-  const fillCredentials = (type: 'admin' | 'committee' | 'guard') => {
-    setErrorMsg(null);
-    clearSessionNotice();
-    if (type === 'admin') {
-      setEmail('admin@secureguard.com');
-      setPassword('Admin@123');
-    } else if (type === 'committee') {
-      setEmail('committee.greenview@secureguard.com');
-      setPassword('Committee@123');
-    } else if (type === 'guard') {
-      setEmail('guard1.greenview@secureguard.com');
-      setPassword('Guard@123');
-    }
-  };
-
   const activeNotice = errorMsg || sessionNotice;
 
   return (
-    <ScreenWrapper style={styles.container}>
+    <ScreenWrapper hasHeader={false} style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.flexOne}
@@ -134,35 +119,6 @@ export const LoginScreen: React.FC = () => {
                 disabled={isLoading || isSubmitting}
                 style={styles.button}
               />
-            </View>
-
-            <View style={styles.seedSection}>
-              <Text variant="caption" style={styles.seedLabel}>
-                Dev Quick-Fill Credentials:
-              </Text>
-              <View style={styles.seedButtonsRow}>
-                <Button
-                  title="Admin"
-                  variant="outline"
-                  size="sm"
-                  onPress={() => fillCredentials('admin')}
-                  style={styles.seedBtn}
-                />
-                <Button
-                  title="Committee"
-                  variant="outline"
-                  size="sm"
-                  onPress={() => fillCredentials('committee')}
-                  style={styles.seedBtn}
-                />
-                <Button
-                  title="Guard"
-                  variant="outline"
-                  size="sm"
-                  onPress={() => fillCredentials('guard')}
-                  style={styles.seedBtn}
-                />
-              </View>
             </View>
           </Card>
         </ScrollView>
@@ -228,23 +184,6 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: theme.spacing.md,
-  },
-  seedSection: {
-    marginTop: theme.spacing.lg,
-    paddingTop: theme.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.surfaceHover,
-  },
-  seedLabel: {
-    textAlign: 'center',
-    marginBottom: theme.spacing.xs,
-  },
-  seedButtonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  seedBtn: {
-    minWidth: 90,
   },
 });
 

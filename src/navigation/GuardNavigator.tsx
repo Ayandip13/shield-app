@@ -1,6 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { GuardStackParamList } from '../types/navigation';
+import { GuardTabNavigator } from './GuardTabNavigator';
 import { GuardHomeScreen } from '../screens/guard/GuardHomeScreen';
 import { GuardAttendanceScreen } from '../screens/guard/GuardAttendanceScreen';
 import { GuardShiftScreen } from '../screens/guard/GuardShiftScreen';
@@ -36,8 +37,8 @@ export const GuardNavigator: React.FC = () => {
     >
       <Stack.Screen
         name="GuardHome"
-        component={GuardHomeScreen}
-        options={{ title: 'Shield - Guard Terminal' }}
+        component={GuardTabNavigator}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="GuardAttendance"

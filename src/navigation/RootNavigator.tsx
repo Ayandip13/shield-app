@@ -45,7 +45,7 @@ export const RootNavigator: React.FC = () => {
         <Stack.Screen
           name="Auth"
           component={LoginScreen}
-          options={{ title: 'Shield Sign In', headerBackVisible: false }}
+          options={{ headerShown: false }}
         />
       ) : user.role === 'provider_admin' ? (
         // Authenticated Provider Admin Stack

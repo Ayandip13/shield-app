@@ -1,6 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ProviderStackParamList } from '../types/navigation';
+import { ProviderAdminTabNavigator } from './ProviderAdminTabNavigator';
 import { ProviderDashboardScreen } from '../screens/provider/ProviderDashboardScreen';
 import { BuildingsListScreen } from '../screens/provider/BuildingsListScreen';
 import { BuildingDetailsScreen } from '../screens/provider/BuildingDetailsScreen';
@@ -45,8 +46,8 @@ export const ProviderAdminNavigator: React.FC = () => {
     >
       <Stack.Screen
         name="ProviderDashboard"
-        component={ProviderDashboardScreen}
-        options={{ title: 'Shield - Control Center' }}
+        component={ProviderAdminTabNavigator}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="BuildingsList"

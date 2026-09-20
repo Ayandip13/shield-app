@@ -1,6 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { CommitteeStackParamList } from '../types/navigation';
+import { CommitteeTabNavigator } from './CommitteeTabNavigator';
 import { CommitteeHomeScreen } from '../screens/committee/CommitteeHomeScreen';
 import { CommitteeAttendanceScreen } from '../screens/committee/CommitteeAttendanceScreen';
 import { CommitteeEntryExitScreen } from '../screens/committee/CommitteeEntryExitScreen';
@@ -33,8 +34,8 @@ export const CommitteeNavigator: React.FC = () => {
     >
       <Stack.Screen
         name="CommitteeHome"
-        component={CommitteeHomeScreen}
-        options={{ title: 'Shield - Committee Portal' }}
+        component={CommitteeTabNavigator}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="CommitteeAttendance"

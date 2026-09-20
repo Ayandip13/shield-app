@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, ViewStyle } from 'react-native';
+import { SafeAreaView, NativeSafeAreaViewProps } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { theme } from '../../theme';
 
@@ -8,20 +8,30 @@ export interface ScreenWrapperProps {
   children: React.ReactNode;
   style?: ViewStyle;
   safeArea?: boolean;
+  hasHeader?: boolean;
+  edges?: NativeSafeAreaViewProps['edges'];
 }
 
 export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
   children,
   style,
   safeArea = true,
+  hasHeader = true,
+  edges,
 }) => {
-  const Container = safeArea ? SafeAreaView : View;
+  const resolvedEdges: NativeSafeAreaViewProps['edges'] = edges
+    ? edges
+    : safeArea
+    ? hasHeader
+      ? ['bottom', 'left', 'right']
+      : ['top', 'bottom', 'left', 'right']
+    : [];
 
   return (
-    <Container style={[styles.container, style]}>
+    <SafeAreaView edges={resolvedEdges} style={[styles.container, style]}>
       <StatusBar style="dark" />
       {children}
-    </Container>
+    </SafeAreaView>
   );
 };
 
@@ -31,3 +41,4 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
 });
+

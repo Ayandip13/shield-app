@@ -8,8 +8,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "npx tsc --noEmit",
-    "update": "eas update --auto",
-    "update:preview": "eas update --branch preview"
+    "update": "eas update --branch preview --environment preview"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",

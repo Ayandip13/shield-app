@@ -261,17 +261,6 @@ export const ProviderDashboardScreen: React.FC = () => {
                 Alerts
               </Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.navCardBtn}
-              onPress={() => navigation.navigate('Profile')}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="person" size={20} color={theme.colors.primary} />
-              <Text variant="body" style={styles.navCardText} numberOfLines={1}>
-                My Profile
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
 
