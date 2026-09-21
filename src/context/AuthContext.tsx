@@ -72,16 +72,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const handleLogin = async (email: string, password: string): Promise<void> => {
-    setIsLoading(true);
     setSessionNotice(null);
-    try {
-      const data = await authService.login(email, password);
-      await saveTokens(data.accessToken, data.refreshToken);
-      setToken(data.accessToken);
-      setUser(data.user);
-    } finally {
-      setIsLoading(false);
-    }
+    const data = await authService.login(email, password);
+    await saveTokens(data.accessToken, data.refreshToken);
+    setToken(data.accessToken);
+    setUser(data.user);
   };
 
   const handleLogout = async (): Promise<void> => {

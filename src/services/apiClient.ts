@@ -1,4 +1,4 @@
-import Constants from 'expo-constants';
+import { envConfig } from '../config/env';
 import { getAccessToken, getRefreshToken, saveTokens, removeTokens } from '../utils/storage';
 import { ApiAuthResponse, RefreshResponse } from '../types/auth';
 
@@ -9,26 +9,24 @@ export function setUnauthorizedHandler(handler: () => void) {
   onUnauthorizedHandler = handler;
 }
 
-const getBaseUrl = (): string => {
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
-  }
-  if (process.env.EXPO_PUBLIC_API_BASE_URL) {
-    return process.env.EXPO_PUBLIC_API_BASE_URL;
-  }
+const LIVE_PRODUCTION_API_URL = 'https://shield-api-pkfz.onrender.com/api/v1';
 
-  const hostUri = Constants.expoConfig?.hostUri;
-  if (hostUri) {
-    const hostIp = hostUri.split(':')[0];
-    if (hostIp && hostIp !== 'localhost' && hostIp !== '127.0.0.1') {
-      return `http://${hostIp}:5000/api/v1`;
+function sanitizeUrl(rawUrl: string): string {
+  let clean = (rawUrl || '').trim().replace(/\/+$/, '');
+  if (!clean || clean.includes('shield-api-10yp') || clean.includes('localhost') || clean.includes('127.0.0.1')) {
+    return LIVE_PRODUCTION_API_URL;
+  }
+  if (!clean.endsWith('/api/v1')) {
+    if (clean.endsWith('/api')) {
+      clean += '/v1';
+    } else {
+      clean += '/api/v1';
     }
   }
+  return clean;
+}
 
-  return 'https://shield-api-pkfz.onrender.com/api/v1';
-};
-
-const BASE_URL = getBaseUrl();
+const BASE_URL = sanitizeUrl(envConfig.apiBaseUrl);
 
 export interface CustomRequestOptions extends RequestInit {
   _isRetry?: boolean;
@@ -65,7 +63,11 @@ export async function request<T>(
   try {
     data = await response.json();
   } catch (parseError) {
+    if (!response.ok) {
+      throw new Error(`Server returned HTTP ${response.status}. Please try again later.`);
+    }
     throw new Error('Invalid response format received from server.');
+    
   }
 
   // Handle HTTP 401 Unauthorized (Expired / Invalid Access Token)
