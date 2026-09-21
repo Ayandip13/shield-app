@@ -33,8 +33,6 @@ export const CommitteeTabNavigator: React.FC = () => {
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.05,
           shadowRadius: 4,
-          height: 54,
-          paddingBottom: 6,
           paddingTop: 4,
         },
         tabBarLabelStyle: {

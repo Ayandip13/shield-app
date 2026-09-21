@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: theme.spacing.lg,
-    paddingBottom: theme.spacing.xl * 2,
+    paddingBottom: theme.spacing.lg,
     gap: theme.spacing.md,
   },
   headerCard: {

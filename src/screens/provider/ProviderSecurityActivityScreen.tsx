@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
   listContent: {
     padding: theme.spacing.lg,
     gap: theme.spacing.sm,
-    paddingBottom: theme.spacing.xl * 2,
+    paddingBottom: theme.spacing.lg,
   },
   activityCard: {
     padding: theme.spacing.md,

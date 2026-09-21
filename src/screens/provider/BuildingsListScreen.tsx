@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     marginVertical: theme.spacing.xs,
   },
   listContent: {
-    paddingBottom: theme.spacing.xl * 2,
+    paddingBottom: theme.spacing.lg,
     gap: theme.spacing.md,
   },
   cardItem: {

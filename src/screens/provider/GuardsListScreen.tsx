@@ -122,15 +122,9 @@ export const GuardsListScreen: React.FC = () => {
       {/* Top Header & Search Bar */}
       <View style={styles.headerBar}>
         <View style={styles.titleRow}>
-          <Text variant="title" style={styles.screenTitle}>
+          <Text variant="subtitle" style={styles.screenTitle}>
             Security Guards
           </Text>
-          <Button
-            title="+ Add Guard"
-            variant="primary"
-            size="sm"
-            onPress={() => navigation.navigate('AddGuard')}
-          />
         </View>
 
         <Input

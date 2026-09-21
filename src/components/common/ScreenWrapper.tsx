@@ -23,7 +23,7 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
     ? edges
     : safeArea
     ? hasHeader
-      ? ['bottom', 'left', 'right']
+      ? ['left', 'right']
       : ['top', 'bottom', 'left', 'right']
     : [];
 
