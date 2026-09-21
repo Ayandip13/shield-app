@@ -123,12 +123,6 @@ export const CommitteeListScreen: React.FC = () => {
           <Text variant="subtitle" style={styles.screenTitle}>
             Building Committee
           </Text>
-          <Button
-            title="+ Add Member"
-            variant="primary"
-            size="sm"
-            onPress={() => navigation.navigate('AddCommitteeMember')}
-          />
         </View>
 
         <Input
