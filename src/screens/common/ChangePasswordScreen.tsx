@@ -1,17 +1,11 @@
 import React, { useState } from 'react';
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ScreenWrapper } from '../../components/common/ScreenWrapper';
+import { KeyboardAwareFormScreen } from '../../components/common/KeyboardAwareFormScreen';
 import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
-import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { theme } from '../../theme';
 import { changePassword } from '../../services/profileService';
@@ -24,38 +18,37 @@ export const ChangePasswordScreen: React.FC = () => {
   const [currentPassword, setCurrentPassword] = useState<string>('');
   const [newPassword, setNewPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
-
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const handleChangePassword = async () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      showWarning('Validation Error', 'All password fields are required.');
+    if (!currentPassword) {
+      showWarning('Validation Error', 'Current Password is required.');
       return;
     }
 
-    if (newPassword.length < 8) {
-      showWarning('Validation Error', 'New password must be at least 8 characters long.');
+    if (!newPassword || newPassword.length < 8) {
+      showWarning('Validation Error', 'New Password must be at least 8 characters long.');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      showWarning('Validation Error', 'New password and confirmation password do not match.');
+      showWarning('Validation Error', 'New Password and Confirm Password do not match.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const res = await changePassword({
+      await changePassword({
         currentPassword,
         newPassword,
       });
 
-      showSuccess('Success', res.message || 'Your account password has been changed successfully.');
+      showSuccess('Success', 'Your password has been changed successfully.');
       navigation.goBack();
     } catch (err: any) {
       showError(
-        'Password Change Error',
-        err.message || 'Failed to update password. Please check your current password.'
+        'Password Change Failed',
+        err.message || 'Incorrect current password or server error.'
       );
     } finally {
       setIsSubmitting(false);
@@ -63,70 +56,71 @@ export const ChangePasswordScreen: React.FC = () => {
   };
 
   return (
-    <ScreenWrapper style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Card variant="elevated" style={styles.card}>
-          <View style={styles.headerRow}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="key-outline" size={24} color={theme.colors.primary} />
-            </View>
-            <View style={styles.headerInfo}>
-              <Text variant="heading" style={styles.headerTitle}>
-                Change Password
-              </Text>
-              <Text variant="caption" style={styles.headerSub}>
-                Update your account password. Must be at least 8 characters.
-              </Text>
-            </View>
+    <KeyboardAwareFormScreen
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+    >
+      <Card variant="elevated" style={styles.card}>
+        <View style={styles.headerRow}>
+          <View style={styles.iconCircle}>
+            <Ionicons name="key-outline" size={24} color={theme.colors.primary} />
           </View>
+          <View style={styles.headerInfo}>
+            <Text variant="heading" style={styles.headerTitle}>
+              Change Password
+            </Text>
+            <Text variant="caption" style={styles.headerSub}>
+              Update your account password. Must be at least 8 characters.
+            </Text>
+          </View>
+        </View>
 
-          <View style={styles.divider} />
+        <View style={styles.divider} />
 
-          {/* Current Password Field */}
-          <Input
-            label="Current Password *"
-            placeholder="Enter current password"
-            value={currentPassword}
-            onChangeText={setCurrentPassword}
-            secureTextEntry
-          />
+        {/* Current Password Field */}
+        <Input
+          label="Current Password *"
+          placeholder="Enter current password"
+          value={currentPassword}
+          onChangeText={setCurrentPassword}
+          secureTextEntry
+        />
 
-          {/* New Password Field */}
-          <Input
-            label="New Password *"
-            placeholder="Enter at least 8 characters"
-            value={newPassword}
-            onChangeText={setNewPassword}
-            secureTextEntry
-          />
+        {/* New Password Field */}
+        <Input
+          label="New Password *"
+          placeholder="Enter at least 8 characters"
+          value={newPassword}
+          onChangeText={setNewPassword}
+          secureTextEntry
+        />
 
-          {/* Confirm Password Field */}
-          <Input
-            label="Confirm New Password *"
-            placeholder="Re-enter new password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            secureTextEntry
-          />
+        {/* Confirm Password Field */}
+        <Input
+          label="Confirm New Password *"
+          placeholder="Re-enter new password"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+        />
 
-          <Button
-            title={isSubmitting ? 'Updating Password...' : 'Update Password'}
-            variant="primary"
-            onPress={handleChangePassword}
-            disabled={isSubmitting}
-            style={styles.saveBtn}
-          />
+        <Button
+          title={isSubmitting ? 'Updating Password...' : 'Update Password'}
+          variant="primary"
+          onPress={handleChangePassword}
+          disabled={isSubmitting}
+          style={styles.saveBtn}
+        />
 
-          <Button
-            title="Cancel"
-            variant="outline"
-            onPress={() => navigation.goBack()}
-            disabled={isSubmitting}
-            style={styles.cancelBtn}
-          />
-        </Card>
-      </ScrollView>
-    </ScreenWrapper>
+        <Button
+          title="Cancel"
+          variant="outline"
+          onPress={() => navigation.goBack()}
+          disabled={isSubmitting}
+          style={styles.cancelBtn}
+        />
+      </Card>
+    </KeyboardAwareFormScreen>
   );
 };
 

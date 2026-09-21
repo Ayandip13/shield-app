@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
-  ScrollView,
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { ScreenWrapper } from '../../components/common/ScreenWrapper';
+import { KeyboardAwareFormScreen } from '../../components/common/KeyboardAwareFormScreen';
 import { Text } from '../../components/common/Text';
 import { Card } from '../../components/common/Card';
 import { Input } from '../../components/common/Input';
@@ -75,108 +74,107 @@ export const EditProfileScreen: React.FC = () => {
   };
 
   return (
-    <ScreenWrapper style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {isLoading ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={styles.loadingText}>Loading Profile Editor...</Text>
-          </View>
-        ) : errorMessage ? (
-          <Card variant="outlined" style={styles.errorCard}>
-            <Ionicons name="alert-circle-outline" size={36} color={theme.colors.danger} />
-            <Text variant="heading" style={styles.errorTitle}>
-              Unable to Load Form
+    <KeyboardAwareFormScreen
+      style={styles.container}
+      contentContainerStyle={styles.scrollContent}
+    >
+      {isLoading ? (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={styles.loadingText}>Loading Profile Editor...</Text>
+        </View>
+      ) : errorMessage ? (
+        <Card variant="outlined" style={styles.errorCard}>
+          <Ionicons name="alert-circle-outline" size={36} color={theme.colors.danger} />
+          <Text variant="heading" style={styles.errorTitle}>
+            Unable to Load Form
+          </Text>
+          <Text variant="caption" style={styles.errorSubtitle}>
+            {errorMessage}
+          </Text>
+        </Card>
+      ) : (
+        <Card variant="elevated" style={styles.card}>
+          <Text variant="heading" style={styles.headerTitle}>
+            Edit Personal Information
+          </Text>
+          <Text variant="caption" style={styles.headerSub}>
+            Update your name and phone number. Security assignment fields are read-only.
+          </Text>
+          <View style={styles.divider} />
+
+          {/* Editable Fields */}
+          <Input
+            label="Full Name *"
+            placeholder="Enter your full name"
+            value={name}
+            onChangeText={setName}
+            autoCapitalize="words"
+          />
+
+          <Input
+            label="Phone Number"
+            placeholder="Enter your contact phone number"
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
+          />
+
+          {/* Read-Only Account Identity Fields */}
+          <View style={styles.readOnlyContainer}>
+            <Text variant="caption" style={styles.readOnlyNotice}>
+              Account & Role Metadata (Read-Only)
             </Text>
-            <Text variant="caption" style={styles.errorSubtitle}>
-              {errorMessage}
-            </Text>
-          </Card>
-        ) : (
-          <>
-            <Card variant="elevated" style={styles.card}>
-              <Text variant="heading" style={styles.headerTitle}>
-                Edit Personal Information
+
+            <View style={styles.readOnlyField}>
+              <Text variant="caption" style={styles.readOnlyLabel}>
+                Email Address (Login ID)
               </Text>
-              <Text variant="caption" style={styles.headerSub}>
-                Update your name and phone number. Security assignment fields are read-only.
+              <Text variant="body" style={styles.readOnlyVal}>
+                {profile?.email}
               </Text>
-              <View style={styles.divider} />
+            </View>
 
-              {/* Editable Fields */}
-              <Input
-                label="Full Name *"
-                placeholder="Enter your full name"
-                value={name}
-                onChangeText={setName}
-                autoCapitalize="words"
-              />
+            <View style={styles.readOnlyField}>
+              <Text variant="caption" style={styles.readOnlyLabel}>
+                Role
+              </Text>
+              <Text variant="body" style={styles.readOnlyVal}>
+                {profile?.role?.toUpperCase()}
+              </Text>
+            </View>
 
-              <Input
-                label="Phone Number"
-                placeholder="Enter your contact phone number"
-                value={phone}
-                onChangeText={setPhone}
-                keyboardType="phone-pad"
-              />
-
-              {/* Read-Only Account Identity Fields */}
-              <View style={styles.readOnlyContainer}>
-                <Text variant="caption" style={styles.readOnlyNotice}>
-                  Account & Role Metadata (Read-Only)
+            {profile?.building?.name && (
+              <View style={styles.readOnlyField}>
+                <Text variant="caption" style={styles.readOnlyLabel}>
+                  Assigned Building
                 </Text>
-
-                <View style={styles.readOnlyField}>
-                  <Text variant="caption" style={styles.readOnlyLabel}>
-                    Email Address (Login ID)
-                  </Text>
-                  <Text variant="body" style={styles.readOnlyVal}>
-                    {profile?.email}
-                  </Text>
-                </View>
-
-                <View style={styles.readOnlyField}>
-                  <Text variant="caption" style={styles.readOnlyLabel}>
-                    Role
-                  </Text>
-                  <Text variant="body" style={styles.readOnlyVal}>
-                    {profile?.role?.toUpperCase()}
-                  </Text>
-                </View>
-
-                {profile?.building?.name && (
-                  <View style={styles.readOnlyField}>
-                    <Text variant="caption" style={styles.readOnlyLabel}>
-                      Assigned Building
-                    </Text>
-                    <Text variant="body" style={styles.readOnlyVal}>
-                      {profile.building.name}
-                    </Text>
-                  </View>
-                )}
+                <Text variant="body" style={styles.readOnlyVal}>
+                  {profile.building.name}
+                </Text>
               </View>
+            )}
+          </View>
 
-              {/* Buttons */}
-              <Button
-                title={isSubmitting ? 'Saving Changes...' : 'Save Profile Changes'}
-                variant="primary"
-                onPress={handleSave}
-                disabled={isSubmitting}
-                style={styles.saveBtn}
-              />
+          {/* Buttons */}
+          <Button
+            title={isSubmitting ? 'Saving Changes...' : 'Save Profile Changes'}
+            variant="primary"
+            onPress={handleSave}
+            disabled={isSubmitting}
+            style={styles.saveBtn}
+          />
 
-              <Button
-                title="Cancel"
-                variant="outline"
-                onPress={() => navigation.goBack()}
-                disabled={isSubmitting}
-                style={styles.cancelBtn}
-              />
-            </Card>
-          </>
-        )}
-      </ScrollView>
-    </ScreenWrapper>
+          <Button
+            title="Cancel"
+            variant="outline"
+            onPress={() => navigation.goBack()}
+            disabled={isSubmitting}
+            style={styles.cancelBtn}
+          />
+        </Card>
+      )}
+    </KeyboardAwareFormScreen>
   );
 };
 

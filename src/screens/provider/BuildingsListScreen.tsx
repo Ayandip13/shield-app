@@ -103,8 +103,8 @@ export const BuildingsListScreen: React.FC = () => {
       {/* Top Action & Search Bar */}
       <View style={styles.headerBar}>
         <View style={styles.titleRow}>
-          <Text variant="title" style={styles.screenTitle}>
-            Security Buildings
+          <Text variant="subtitle" style={styles.screenTitle}>
+            Buildings
           </Text>
           <Button
             title="+ Add"
@@ -199,6 +199,7 @@ const styles = StyleSheet.create({
   },
   screenTitle: {
     color: theme.colors.textPrimary,
+    fontWeight: 'bold',
   },
   searchInput: {
     marginVertical: theme.spacing.xs,

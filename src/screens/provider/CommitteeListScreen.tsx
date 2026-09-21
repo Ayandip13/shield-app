@@ -121,8 +121,14 @@ export const CommitteeListScreen: React.FC = () => {
       <View style={styles.headerBar}>
         <View style={styles.titleRow}>
           <Text variant="subtitle" style={styles.screenTitle}>
-            Building Committee
+            Members
           </Text>
+          <Button
+            title="+ Add"
+            variant="primary"
+            size="sm"
+            onPress={() => navigation.navigate('AddCommitteeMember')}
+          />
         </View>
 
         <Input

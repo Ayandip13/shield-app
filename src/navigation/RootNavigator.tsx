@@ -1,14 +1,13 @@
 import React from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { ProviderAdminNavigator } from './ProviderAdminNavigator';
 import { CommitteeNavigator } from './CommitteeNavigator';
 import { GuardNavigator } from './GuardNavigator';
+import { StartupSkeleton } from '../components/skeletons/StartupSkeleton';
 import { useAuth } from '../context/AuthContext';
 import { theme } from '../theme';
-import { Text } from '../components/common/Text';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -16,12 +15,7 @@ export const RootNavigator: React.FC = () => {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Initializing Shield Session...</Text>
-      </View>
-    );
+    return <StartupSkeleton />;
   }
 
   return (
@@ -72,16 +66,3 @@ export const RootNavigator: React.FC = () => {
     </Stack.Navigator>
   );
 };
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: theme.colors.background,
-  },
-  loadingText: {
-    marginTop: theme.spacing.md,
-    color: theme.colors.textSecondary,
-  },
-});

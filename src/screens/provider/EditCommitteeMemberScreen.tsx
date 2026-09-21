@@ -114,7 +114,7 @@ export const EditCommitteeMemberScreen: React.FC = () => {
   return (
     <ScreenWrapper style={styles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flexOne}
       >
         <ScrollView

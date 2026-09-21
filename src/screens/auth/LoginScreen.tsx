@@ -60,7 +60,7 @@ export const LoginScreen: React.FC = () => {
   return (
     <ScreenWrapper hasHeader={false} style={styles.container}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.flexOne}
       >
         <ScrollView
