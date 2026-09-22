@@ -18,7 +18,10 @@ import { useToast } from '../../context/ToastContext';
 import { ProviderStackParamList } from '../../types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import { useBuildingDetailsQuery } from '../../hooks/queries/useBuildings';
-import { useUpdateBuildingStatusMutation } from '../../hooks/mutations/useBuildingMutations';
+import {
+  useUpdateBuildingStatusMutation,
+  useDeleteBuildingMutation,
+} from '../../hooks/mutations/useBuildingMutations';
 import { DetailsSkeleton } from '../../components/skeletons/DetailsSkeleton';
 
 type DetailsRouteProp = RouteProp<ProviderStackParamList, 'BuildingDetails'>;
@@ -40,6 +43,9 @@ export const BuildingDetailsScreen: React.FC = () => {
 
   const updateStatusMutation = useUpdateBuildingStatusMutation(buildingId);
   const isTogglingStatus = updateStatusMutation.isPending;
+
+  const deleteBuildingMutation = useDeleteBuildingMutation();
+  const isDeleting = deleteBuildingMutation.isPending;
 
   useFocusEffect(
     useCallback(() => {
@@ -67,6 +73,31 @@ export const BuildingDetailsScreen: React.FC = () => {
               showSuccess('Building Updated', `Building has been ${newStatus ? 'activated' : 'deactivated'}.`);
             } catch (err: any) {
               showError('Update Failed', err.message || 'Failed to update building status.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteBuilding = async () => {
+    if (!building) return;
+
+    Alert.alert(
+      'Delete Building?',
+      `Are you sure you want to permanently delete "${building.name}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteBuildingMutation.mutateAsync(building._id);
+              showSuccess('Building Deleted', `"${building.name}" has been permanently deleted.`);
+              navigation.goBack();
+            } catch (err: any) {
+              showError('Delete Failed', err.message || 'Failed to delete building.');
             }
           },
         },
@@ -200,56 +231,74 @@ export const BuildingDetailsScreen: React.FC = () => {
           </Text>
           <View style={styles.divider} />
 
-          <View style={styles.actionButtonsCol}>
-            <Button
-              title="+ Add Guard for Building"
-              variant="primary"
-              leftIcon={<Ionicons name="person-add-outline" size={18} color="#FFFFFF" />}
-              onPress={() => navigation.navigate('AddGuard', { buildingId: building._id })}
-              style={styles.actionBtn}
-            />
+          <View style={styles.actionGrid}>
+            <View style={styles.actionRow}>
+              <Button
+                title="+ Add Guard"
+                variant="primary"
+                size="sm"
+                leftIcon={<Ionicons name="person-add-outline" size={16} color="#FFFFFF" />}
+                onPress={() => navigation.navigate('AddGuard', { buildingId: building._id })}
+                style={styles.actionBtnGrid}
+              />
 
-            <Button
-              title="+ Add Committee Member"
-              variant="outline"
-              leftIcon={<Ionicons name="people-outline" size={18} color={theme.colors.primary} />}
-              onPress={() => navigation.navigate('AddCommitteeMember', { buildingId: building._id })}
-              style={styles.actionBtn}
-            />
+              <Button
+                title="+ Add Member"
+                variant="outline"
+                size="sm"
+                leftIcon={<Ionicons name="people-outline" size={16} color={theme.colors.primary} />}
+                onPress={() => navigation.navigate('AddCommitteeMember', { buildingId: building._id })}
+                style={styles.actionBtnGrid}
+              />
+            </View>
 
-            <Button
-              title="Edit Building Details"
-              variant="outline"
-              leftIcon={<Ionicons name="create-outline" size={18} color={theme.colors.primary} />}
-              onPress={() => navigation.navigate('EditBuilding', { building })}
-              style={styles.actionBtn}
-            />
+            <View style={styles.actionRow}>
+              <Button
+                title="Edit Details"
+                variant="outline"
+                size="sm"
+                leftIcon={<Ionicons name="create-outline" size={16} color={theme.colors.primary} />}
+                onPress={() => navigation.navigate('EditBuilding', { building })}
+                style={styles.actionBtnGrid}
+              />
 
-            <Button
-              title={
-                isTogglingStatus
-                  ? 'Updating...'
-                  : building.isActive
-                  ? 'Deactivate Building'
-                  : 'Activate Building'
-              }
-              variant={building.isActive ? 'outline' : 'primary'}
-              leftIcon={
-                <Ionicons
-                  name={building.isActive ? 'pause-circle-outline' : 'play-circle-outline'}
-                  size={18}
-                  color={building.isActive ? theme.colors.danger : '#FFFFFF'}
-                />
-              }
-              onPress={handleToggleStatus}
-              disabled={isTogglingStatus}
-              style={[
-                styles.actionBtn,
-                building.isActive ? styles.deactivateBtn : undefined,
-              ]}
-            />
+              <Button
+                title={
+                  isTogglingStatus
+                    ? 'Updating...'
+                    : building.isActive
+                    ? 'Deactivate'
+                    : 'Activate'
+                }
+                variant={building.isActive ? 'outline' : 'primary'}
+                size="sm"
+                leftIcon={
+                  <Ionicons
+                    name={building.isActive ? 'pause-circle-outline' : 'play-circle-outline'}
+                    size={16}
+                    color={building.isActive ? theme.colors.danger : '#FFFFFF'}
+                  />
+                }
+                onPress={handleToggleStatus}
+                disabled={isTogglingStatus}
+                style={[
+                  styles.actionBtnGrid,
+                  building.isActive ? styles.deactivateBtn : undefined,
+                ]}
+              />
+            </View>
           </View>
         </Card>
+
+        {/* Delete Building Button */}
+        <Button
+          title={isDeleting ? 'Deleting Building...' : 'Delete Building'}
+          variant="danger"
+          leftIcon={<Ionicons name="trash-outline" size={18} color="#FFFFFF" />}
+          onPress={handleDeleteBuilding}
+          disabled={isDeleting}
+          style={styles.deleteBtn}
+        />
 
       </ScrollView>
     </ScreenWrapper>
@@ -352,13 +401,21 @@ const styles = StyleSheet.create({
   actionsCard: {
     padding: theme.spacing.lg,
   },
-  actionButtonsCol: {
-    gap: theme.spacing.md,
+  actionGrid: {
+    gap: theme.spacing.sm,
   },
-  actionBtn: {
-    width: '100%',
+  actionRow: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+  },
+  actionBtnGrid: {
+    flex: 1,
+    paddingHorizontal: theme.spacing.xs,
   },
   deactivateBtn: {
     borderColor: theme.colors.danger,
+  },
+  deleteBtn: {
+    marginTop: theme.spacing.xs,
   },
 });

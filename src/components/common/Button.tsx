@@ -11,7 +11,7 @@ import { theme } from '../../theme';
 
 export interface ButtonProps extends TouchableOpacityProps {
   title: string;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   disabled?: boolean;
@@ -31,8 +31,13 @@ export const Button: React.FC<ButtonProps> = ({
   const isOutline = variant === 'outline';
   const isSecondary = variant === 'secondary';
   const isGhost = variant === 'ghost';
+  const isDanger = variant === 'danger';
 
-  const textColor = isOutline || isGhost ? theme.colors.primary : isSecondary ? theme.colors.textPrimary : theme.colors.textOnPrimary;
+  const textColor = isOutline || isGhost
+    ? theme.colors.primary
+    : isSecondary
+    ? theme.colors.textPrimary
+    : theme.colors.textOnPrimary;
 
   return (
     <TouchableOpacity
@@ -96,6 +101,10 @@ const styles = StyleSheet.create({
   },
   ghost: {
     backgroundColor: 'transparent',
+  },
+  danger: {
+    backgroundColor: theme.colors.danger,
+    ...theme.shadows.sm,
   },
   size_sm: {
     paddingVertical: theme.spacing.xs + 2,

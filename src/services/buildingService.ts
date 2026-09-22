@@ -60,3 +60,9 @@ export async function updateBuildingStatus(
   }
   return response.data;
 }
+
+export async function deleteBuilding(id: string): Promise<void> {
+  await request(`/buildings/${id}`, {
+    method: 'DELETE',
+  });
+}

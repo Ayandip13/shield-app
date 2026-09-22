@@ -4,6 +4,7 @@ import {
   createBuilding,
   updateBuilding,
   updateBuildingStatus,
+  deleteBuilding,
 } from '../../services/buildingService';
 import { CreateBuildingPayload, UpdateBuildingPayload } from '../../types/building';
 
@@ -37,6 +38,17 @@ export function useUpdateBuildingStatusMutation(buildingId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.buildings.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.buildings.detail(buildingId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.root });
+    },
+  });
+}
+
+export function useDeleteBuildingMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (buildingId: string) => deleteBuilding(buildingId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.buildings.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.root });
     },
   });
